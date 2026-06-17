@@ -1,0 +1,12 @@
+[package]
+name = "base-files"
+version = "1.0.0"
+description = "Freeside OS base filesystem layout, directory topologies, and core OverlayFS templates"
+dependencies = []
+
+[source]
+file = "base-files-1.0.0.tar.gz"
+checksum = { algorithm = "sha256", value = "40266c03ef43829e3c3e7fd66807dd4b48c00569255d45a17258dc7340796d4e" }
+
+[build]
+dependencies = []
