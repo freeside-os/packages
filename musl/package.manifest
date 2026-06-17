@@ -1,0 +1,13 @@
+[package]
+name = "musl"
+version = "1.2.5"
+description = "musl C library (libc) implementation for Freeside"
+dependencies = []
+group = "base"
+
+[[sources]]
+url = "https://musl.libc.org/releases/musl-1.2.5.tar.gz"
+checksum = { algorithm = "sha256", value = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4" }
+
+[build]
+dependencies = ["base-files"]

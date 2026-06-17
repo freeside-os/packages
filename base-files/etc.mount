@@ -1,0 +1,11 @@
+[Unit]
+Description=Stateless OverlayFS over /etc
+DefaultDependencies=no
+After=var.mount local-fs-pre.target
+Before=local-fs.target
+
+[Mount]
+What=overlay
+Where=/etc
+Type=overlay
+Options=lowerdir=/usr/share/freeside/etc,upperdir=/var/lib/freeside/mutable-etc,workdir=/var/lib/freeside/etc-work,redirect_dir=on,index=on,xino=on
