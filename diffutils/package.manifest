@@ -1,0 +1,13 @@
+[package]
+name = "diffutils"
+version = "3.12"
+description = "GNU diffutils utilities"
+dependencies = ["musl"]
+group = "base"
+
+[[sources]]
+url = "https://ftp.gnu.org/gnu/diffutils/diffutils-3.12.tar.xz"
+checksum = { algorithm = "sha256", value = "d310183115ed9d8314e3006d64115f013d5a7d727a83d47a4697960135d554a3" }
+
+[build]
+dependencies = ["musl"]
