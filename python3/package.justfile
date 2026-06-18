@@ -1,6 +1,6 @@
 build:
     tar -xf Python-3.12.3.tar.xz
-    cd Python-3.12.3 && ./configure --prefix=/usr --enable-shared --with-ensurepip=yes --with-openssl=/usr && make -j$(nproc)
+    cd Python-3.12.3 && ./configure --prefix=/usr --enable-shared --with-ensurepip=yes --with-openssl=/usr ac_cv_header_libintl_h=no ac_cv_lib_intl_textdomain=no && make -j$(nproc)
 
 package:
     cd Python-3.12.3 && make DESTDIR="$DESTDIR" install
