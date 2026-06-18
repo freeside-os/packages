@@ -7,7 +7,7 @@ group = "builder"
 
 [[sources]]
 url = "https://ftp.gnu.org/gnu/gperf/gperf-3.1.tar.gz"
-checksum = { algorithm = "sha256", value = "9e251c0a618413693e506692292f7c00676a9a3f91d8a6797cc262066d713c77" }
+checksum = { algorithm = "sha256", value = "588546b945bba4b70b6a3a616e80b4ab466e3f33024a352fc2198112cdbb3ae2" }
 
 [build]
 dependencies = ["musl"]

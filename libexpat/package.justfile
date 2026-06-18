@@ -6,10 +6,10 @@ build:
         --enable-static
     cd expat-$PKG_VERSION && make -j$(nproc)
 
-package destdir:
-    cd expat-$PKG_VERSION && make DESTDIR="{{destdir}}" install
-    find "{{destdir}}" -type d -exec chmod 755 {} +
-    if [ -d "{{destdir}}/usr/bin" ]; then find "{{destdir}}/usr/bin" -type f -exec chmod 755 {} +; fi
-    find "{{destdir}}" -name "*.so*" -exec chmod 755 {} +
-    find "{{destdir}}" -name "*.a" -exec chmod 644 {} +
-    find "{{destdir}}" -name "*.h" -exec chmod 644 {} +
+package:
+    cd expat-$PKG_VERSION && make DESTDIR="$DESTDIR" install
+    find "$DESTDIR" -type d -exec chmod 755 {} +
+    if [ -d "$DESTDIR/usr/bin" ]; then find "$DESTDIR/usr/bin" -type f -exec chmod 755 {} +; fi
+    find "$DESTDIR" -name "*.so*" -exec chmod 755 {} +
+    find "$DESTDIR" -name "*.a" -exec chmod 644 {} +
+    find "$DESTDIR" -name "*.h" -exec chmod 644 {} +

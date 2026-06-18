@@ -19,7 +19,7 @@ build:
         -Dukify=disabled
     cd $PKG_NAME-$PKG_VERSION && meson compile -C build -j$(nproc)
 
-package destdir:
-    cd $PKG_NAME-$PKG_VERSION && meson install -C build --destdir "{{destdir}}"
-    find "{{destdir}}" -type d -exec chmod 755 {} +
-    if [ -d "{{destdir}}/usr/bin" ]; then find "{{destdir}}/usr/bin" -type f -exec chmod 755 {} +; fi
+package:
+    cd $PKG_NAME-$PKG_VERSION && meson install -C build --destdir "$DESTDIR"
+    find "$DESTDIR" -type d -exec chmod 755 {} +
+    if [ -d "$DESTDIR/usr/bin" ]; then find "$DESTDIR/usr/bin" -type f -exec chmod 755 {} +; fi

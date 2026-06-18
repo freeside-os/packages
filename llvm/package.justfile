@@ -13,8 +13,8 @@ build:
         -DCLANG_DEFAULT_CXX_STDLIB="libc++" \
         ../llvm && make -j$(nproc)
 
-package destdir:
-    cd llvm-project-$PKG_VERSION.src/build && make DESTDIR="{{destdir}}" install
-    find "{{destdir}}" -type d -exec chmod 755 {} +
-    if [ -d "{{destdir}}/usr/bin" ]; then find "{{destdir}}/usr/bin" -type f -exec chmod 755 {} +; fi
-    if [ -d "{{destdir}}/usr/lib" ]; then find "{{destdir}}/usr/lib" -name "*.so*" -exec chmod 755 {} + || true; fi
+package:
+    cd llvm-project-$PKG_VERSION.src/build && make DESTDIR="$DESTDIR" install
+    find "$DESTDIR" -type d -exec chmod 755 {} +
+    if [ -d "$DESTDIR/usr/bin" ]; then find "$DESTDIR/usr/bin" -type f -exec chmod 755 {} +; fi
+    if [ -d "$DESTDIR/usr/lib" ]; then find "$DESTDIR/usr/lib" -name "*.so*" -exec chmod 755 {} + || true; fi
