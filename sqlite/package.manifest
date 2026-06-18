@@ -1,0 +1,16 @@
+[package]
+name = "sqlite"
+version = "3.45.3"
+description = "Self-contained, serverless, zero-configuration SQL database engine"
+dependencies = ["musl"]
+group = "base"
+
+[[sources]]
+url = "https://www.sqlite.org/2024/sqlite-autoconf-3450300.tar.gz"
+checksum = { algorithm = "sha256", value = "b2809ca53124c19c60f42bf627736eae011afdcc205bb48270a5ee9a38191531" }
+
+[build]
+dependencies = ["musl"]
+
+[build.environment]
+SQLITE_CODE = "3450300"
