@@ -1,6 +1,6 @@
 build:
     tar -xf v255.tar.gz
-    cd systemd-255 && meson setup build \
+    cd $PKG_NAME-$PKG_VERSION && meson setup build \
         --prefix=/usr \
         --buildtype=release \
         -Ddefault-dnssec=no \
@@ -17,9 +17,9 @@ build:
         -Dnobody-group=nogroup \
         -Dsysupdate=disabled \
         -Dukify=disabled
-    cd systemd-255 && meson compile -C build -j$(nproc)
+    cd $PKG_NAME-$PKG_VERSION && meson compile -C build -j$(nproc)
 
 package destdir:
-    cd systemd-255 && meson install -C build --destdir "{{destdir}}"
+    cd $PKG_NAME-$PKG_VERSION && meson install -C build --destdir "{{destdir}}"
     find "{{destdir}}" -type d -exec chmod 755 {} +
     if [ -d "{{destdir}}/usr/bin" ]; then find "{{destdir}}/usr/bin" -type f -exec chmod 755 {} +; fi

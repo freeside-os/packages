@@ -1,9 +1,9 @@
 build:
-    tar -xf musl-1.2.5.tar.gz
-    cd musl-1.2.5 && ./configure --prefix=/usr --syslibdir=/usr/lib && make -j$(nproc)
+    tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
+    cd $PKG_NAME-$PKG_VERSION && ./configure --prefix=/usr --syslibdir=/usr/lib && make -j$(nproc)
 
 package destdir:
-    cd musl-1.2.5 && make DESTDIR="{{destdir}}" install
+    cd $PKG_NAME-$PKG_VERSION && make DESTDIR="{{destdir}}" install
     # Enforce strict permissions compliance
     find "{{destdir}}" -type d -exec chmod 755 {} +
     find "{{destdir}}/usr/lib" -name "*.so*" -exec chmod 755 {} + || true

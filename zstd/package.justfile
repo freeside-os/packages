@@ -1,8 +1,8 @@
 build:
-    tar -xf zstd-1.5.6.tar.gz
-    cd zstd-1.5.6 && make -j$(nproc) PREFIX=/usr
+    tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
+    cd $PKG_NAME-$PKG_VERSION && make -j$(nproc) PREFIX=/usr
 
 package destdir:
-    cd zstd-1.5.6 && make DESTDIR="{{destdir}}" PREFIX=/usr install
+    cd $PKG_NAME-$PKG_VERSION && make DESTDIR="{{destdir}}" PREFIX=/usr install
     find "{{destdir}}" -type d -exec chmod 755 {} +
     find "{{destdir}}/usr/lib" -name "*.so*" -exec chmod 755 {} + || true

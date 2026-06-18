@@ -1,5 +1,5 @@
 build:
-    tar -xf straylight-1.0.0.tar.gz
+    tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
     cd straylight && cargo build --release
 
 package destdir:

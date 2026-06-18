@@ -1,7 +1,7 @@
 build:
-    tar -xf linux-7.1.tar.xz
-    cd linux-7.1 && make mrproper
-    cd linux-7.1 && make headers_install ARCH=x86_64 INSTALL_HDR_PATH=/tmp/headers-out
+    tar -xf linux-$PKG_VERSION.tar.xz
+    cd linux-$PKG_VERSION && make mrproper
+    cd linux-$PKG_VERSION && make headers_install ARCH=x86_64 INSTALL_HDR_PATH=/tmp/headers-out
 
 package destdir:
     mkdir -p "{{destdir}}/usr/include"

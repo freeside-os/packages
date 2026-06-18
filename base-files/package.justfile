@@ -4,7 +4,7 @@ build:
 
 package destdir:
     # 1. Unpack default lowerdir configurations (/usr/share/freeside/etc/passwd, etc.)
-    tar -xf base-files-1.0.0.tar.gz -C "{{destdir}}"
+    tar -xf $PKG_NAME-$PKG_VERSION.tar.gz -C "{{destdir}}"
     
     # 2. Assert read-only userspace structures are initialized
     mkdir -p "{{destdir}}/usr/bin"

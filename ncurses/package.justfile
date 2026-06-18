@@ -1,9 +1,9 @@
 build:
-    tar -xf ncurses-6.4.tar.gz
-    cd ncurses-6.4 && ./configure --prefix=/usr --with-shared --without-debug --enable-widec --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig && make -j$(nproc)
+    tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
+    cd $PKG_NAME-$PKG_VERSION && ./configure --prefix=/usr --with-shared --without-debug --enable-widec --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig && make -j$(nproc)
 
 package destdir:
-    cd ncurses-6.4 && make DESTDIR="{{destdir}}" install
+    cd $PKG_NAME-$PKG_VERSION && make DESTDIR="{{destdir}}" install
     # Link libncurses to libncursesw for compatibility
     for lib in ncurses form panel menu; do \
         ln -sf lib${lib}w.so "{{destdir}}/usr/lib/lib${lib}.so"; \

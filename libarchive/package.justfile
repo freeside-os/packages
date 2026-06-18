@@ -1,9 +1,9 @@
 build:
-    tar -xf libarchive-3.7.4.tar.gz
-    cd libarchive-3.7.4 && ./configure --prefix=/usr --disable-static && make -j$(nproc)
+    tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
+    cd $PKG_NAME-$PKG_VERSION && ./configure --prefix=/usr --disable-static && make -j$(nproc)
 
 package destdir:
-    cd libarchive-3.7.4 && make DESTDIR="{{destdir}}" install
+    cd $PKG_NAME-$PKG_VERSION && make DESTDIR="{{destdir}}" install
     # Enforce strict permissions compliance
     find "{{destdir}}" -type d -exec chmod 755 {} +
     find "{{destdir}}/usr/lib" -name "*.so*" -exec chmod 755 {} + || true
