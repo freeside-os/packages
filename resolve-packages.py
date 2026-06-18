@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+Freeside OS Package Dependency Resolver & Topological Sorter
+===========================================================
+This script parses package manifests under the `packages/` repository
+and returns a topologically sorted list of package names.
+
+It resolves both runtime dependencies (`[package].dependencies`) and
+build-time dependencies (`[build].dependencies`) to guarantee the correct
+compilation order in isolated container sandboxes (such as `straylight`).
+
+Usage:
+    python3 resolve-packages.py
+"""
 import os
 import sys
 
