@@ -1,0 +1,13 @@
+[package]
+name = "libffi"
+version = "3.4.6"
+description = "Portable foreign function interface library"
+dependencies = ["musl"]
+group = "base"
+
+[[sources]]
+url = "https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz"
+checksum = { algorithm = "sha256", value = "b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e" }
+
+[build]
+dependencies = ["musl"]

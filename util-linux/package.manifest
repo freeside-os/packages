@@ -1,0 +1,13 @@
+[package]
+name = "util-linux"
+version = "2.40.1"
+description = "Miscellaneous system utilities for Linux"
+dependencies = ["musl"]
+group = "system"
+
+[[sources]]
+url = "https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v2.40/util-linux-2.40.1.tar.xz"
+checksum = { algorithm = "sha256", value = "59e676aa53ccb44b6c39f0ffe01a8fa274891c91bef1474752fad92461def24f" }
+
+[build]
+dependencies = ["musl"]

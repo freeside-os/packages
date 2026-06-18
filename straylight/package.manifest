@@ -1,0 +1,13 @@
+[package]
+name = "straylight"
+version = "1.0.0"
+description = "Straylight Package Manager CLI"
+dependencies = ["musl", "rust"]
+group = "system"
+
+[[sources]]
+file = "straylight-1.0.0.tar.gz"
+checksum = { algorithm = "sha256", value = "ae12a88e2339c8f2db53a1c115bea95834480ac7bae6642abc741c9667f48a39" }
+
+[build]
+dependencies = ["musl", "rust"]

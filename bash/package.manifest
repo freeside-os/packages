@@ -1,0 +1,13 @@
+[package]
+name = "bash"
+version = "5.2.21"
+description = "GNU Bourne Again Shell"
+dependencies = ["musl", "ncurses"]
+group = "base"
+
+[[sources]]
+url = "https://ftp.gnu.org/gnu/bash/bash-5.2.21.tar.gz"
+checksum = { algorithm = "sha256", value = "c8e31bdc59b69aaffc5b36509905ba3e5cbb12747091d27b4b977f078560d5b8" }
+
+[build]
+dependencies = ["musl", "ncurses"]

@@ -1,0 +1,13 @@
+[package]
+name = "perl"
+version = "5.38.2"
+description = "Practical Extraction and Report Language"
+dependencies = ["musl"]
+group = "builder"
+
+[[sources]]
+url = "https://www.cpan.org/src/5.0/perl-5.38.2.tar.xz"
+checksum = { algorithm = "sha256", value = "d91115e90b896520e83d4de6b52f8254ef2b70a8d545ffab33200ea9f1cf29e8" }
+
+[build]
+dependencies = ["musl"]

@@ -1,0 +1,13 @@
+[package]
+name = "gperf"
+version = "3.1"
+description = "Perfect hash function generator"
+dependencies = ["musl"]
+group = "builder"
+
+[[sources]]
+url = "https://ftp.gnu.org/gnu/gperf/gperf-3.1.tar.gz"
+checksum = { algorithm = "sha256", value = "9e251c0a618413693e506692292f7c00676a9a3f91d8a6797cc262066d713c77" }
+
+[build]
+dependencies = ["musl"]

@@ -1,0 +1,13 @@
+[package]
+name = "systemd"
+version = "255"
+description = "System and Service Manager"
+dependencies = ["musl", "util-linux", "libcap"]
+group = "system"
+
+[[sources]]
+url = "https://github.com/systemd/systemd/archive/refs/tags/v255.tar.gz"
+checksum = { algorithm = "sha256", value = "28854ffb2cb5f9e07fcbdbaf1e03a80b3462a12edeef84893ca2f37b22e4491e" }
+
+[build]
+dependencies = ["musl", "util-linux", "libcap"]

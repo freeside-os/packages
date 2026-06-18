@@ -1,0 +1,13 @@
+[package]
+name = "readline"
+version = "8.2"
+description = "GNU readline library for interactive line editing"
+dependencies = ["musl", "ncurses"]
+group = "base"
+
+[[sources]]
+url = "https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz"
+checksum = { algorithm = "sha256", value = "3feb7171f16a84ee82ca18a36d7b9be109a52c04f492a053331d7d1095007c35" }
+
+[build]
+dependencies = ["musl", "ncurses"]

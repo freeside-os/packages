@@ -1,0 +1,13 @@
+[package]
+name = "ca-certificates"
+version = "2024.07.02"
+description = "Mozilla CA certificate bundle for TLS verification"
+dependencies = []
+group = "base"
+
+[[sources]]
+url = "https://curl.se/ca/cacert-2024-07-02.pem"
+checksum = { algorithm = "sha256", value = "1bf458412568e134a4514f5e170a328d11091e071c7110955c9884ed87972ac9" }
+
+[build]
+dependencies = []

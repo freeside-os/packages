@@ -1,0 +1,13 @@
+[package]
+name = "just"
+version = "1.36.0"
+description = "Just a handy command runner"
+dependencies = ["musl"]
+group = "builder"
+
+[[sources]]
+url = "https://github.com/casey/just/archive/refs/tags/1.36.0.tar.gz"
+checksum = { algorithm = "sha256", value = "bc2e2ff0268c2818659c524b21663564864b50ba102afb0a44fe73c08cf35ff0" }
+
+[build]
+dependencies = ["musl"]

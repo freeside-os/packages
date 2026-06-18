@@ -1,0 +1,13 @@
+[package]
+name = "vim"
+version = "9.1.1000"
+description = "Improved vi-style text editor"
+dependencies = ["musl", "ncurses"]
+group = "system"
+
+[[sources]]
+url = "https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz"
+checksum = { algorithm = "sha256", value = "c8ccd457bba5563513ab3e2088ad10d62b982682af9a9278686b48202b8c7697" }
+
+[build]
+dependencies = ["musl", "ncurses"]

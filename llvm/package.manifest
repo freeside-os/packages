@@ -1,0 +1,13 @@
+[package]
+name = "llvm"
+version = "18.1.6"
+description = "The LLVM Compiler Infrastructure (including Clang, LLD, Compiler-RT)"
+dependencies = ["musl"]
+group = "builder"
+
+[[sources]]
+url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.6/llvm-project-18.1.6.src.tar.xz"
+checksum = { algorithm = "sha256", value = "bd4b4cb6374bcd5fc5a3ba60cb80425d29da34f316b8821abc12c0db225cf6b4" }
+
+[build]
+dependencies = ["musl"]

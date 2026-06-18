@@ -1,0 +1,13 @@
+[package]
+name = "meson"
+version = "1.4.0"
+description = "High-productivity build system"
+dependencies = ["musl", "ninja"]
+group = "builder"
+
+[[sources]]
+url = "https://github.com/mesonbuild/meson/releases/download/1.4.0/meson-1.4.0.tar.gz"
+checksum = { algorithm = "sha256", value = "26d98ee9bf18a6eba0d3f855ddec31dbe857667d269bc0b6017335572f85bbcb" }
+
+[build]
+dependencies = ["musl", "ninja"]

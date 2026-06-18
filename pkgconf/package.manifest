@@ -1,0 +1,13 @@
+[package]
+name = "pkgconf"
+version = "2.2.0"
+description = "Package compiler and linker configuration tool"
+dependencies = ["musl"]
+group = "builder"
+
+[[sources]]
+url = "https://distfiles.dereferenced.org/pkgconf/pkgconf-2.2.0.tar.xz"
+checksum = { algorithm = "sha256", value = "b06ff63a83536aa8c2f6422fa80ad45e4833f590266feb14eaddfe1d4c853c69" }
+
+[build]
+dependencies = ["musl"]

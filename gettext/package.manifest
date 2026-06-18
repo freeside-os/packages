@@ -1,0 +1,13 @@
+[package]
+name = "gettext"
+version = "0.22.5"
+description = "GNU internationalization utilities"
+dependencies = ["musl", "ncurses"]
+group = "builder"
+
+[[sources]]
+url = "https://ftp.gnu.org/gnu/gettext/gettext-0.22.5.tar.xz"
+checksum = { algorithm = "sha256", value = "ec1705b1e969b83a9f073144ec806151db88127f5e40fe5a94cb6c8fa48996a0" }
+
+[build]
+dependencies = ["musl", "ncurses"]

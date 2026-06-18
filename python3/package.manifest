@@ -1,0 +1,13 @@
+[package]
+name = "python3"
+version = "3.12.3"
+description = "Python Programming Language"
+dependencies = ["musl", "zlib", "openssl", "bzip2", "xz"]
+group = "base"
+
+[[sources]]
+url = "https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz"
+checksum = { algorithm = "sha256", value = "56bfef1fdfc1221ce6720e43a661e3eb41785dd914ce99698d8c7896af4bdaa1" }
+
+[build]
+dependencies = ["musl", "zlib", "openssl", "bzip2", "xz"]
