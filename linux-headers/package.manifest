@@ -10,4 +10,4 @@ url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.1.tar.xz"
 checksum = { algorithm = "sha256", value = "691f44797fbe790dc8a321604c927087526ad27b6d649925d60f8eed0a2564a0" }
 
 [build]
-dependencies = []
+dependencies = ["musl", "sed", "grep"]
