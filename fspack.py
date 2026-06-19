@@ -505,7 +505,7 @@ def build_package_impl(pkg_name):
     pkg_dependencies = " ".join(manifest.package.dependencies)
     
     tarball_name = f"{pkg_name}-{pkg_version}-1.tar.gz"
-    output_dir = "/workspace/build/packages"
+    output_dir = os.environ.get("STRAYLIGHT_BUILDER_OUTPUT_ROOT", "/workspace/build/packages")
     tarball_path = os.path.join(output_dir, tarball_name)
     
     if os.path.isfile(tarball_path):
@@ -517,7 +517,8 @@ def build_package_impl(pkg_name):
     print(f"[{pkg_name}] Building {pkg_name}-{pkg_version} (group: {pkg_group})")
     print("=" * 64)
 
-    ws = f"/workspace/build/workspace/{pkg_name}-{pkg_version}"
+    ws_root = os.environ.get("STRAYLIGHT_BUILDER_ROOT", "/workspace/build")
+    ws = os.path.join(ws_root, f"workspace/{pkg_name}-{pkg_version}")
     src_dir = f"{ws}/src"
     dest_dir = f"{ws}/dest"
     
