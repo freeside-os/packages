@@ -108,7 +108,7 @@ def load_manifest(manifest_path: str) -> PackageManifest:
 
 def get_packages_dir():
     """Locates the packages directory in the workspace."""
-    return os.path.dirname(os.path.abspath(__file__))
+    return os.environ.get("STRAYLIGHT_PACKAGES_ROOT", os.path.dirname(os.path.abspath(__file__)))
 
 def load_all_manifests(packages_dir):
     """Loads all package manifests from the packages directory."""
