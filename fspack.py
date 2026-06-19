@@ -12,6 +12,12 @@ import textwrap
 import tomllib
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
+import ssl
+
+try:
+    ssl._create_default_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
 
 # ==============================================================================
 # Typed Manifest Dataclasses
@@ -578,6 +584,58 @@ def handle_info(args):
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
+def handle_create(args):
+    """CLI handler to create a new package directory with manifest and justfile stubs."""
+    packages_dir = get_packages_dir()
+    pkg_dir = os.path.join(packages_dir, args.pkgname)
+    
+    if os.path.exists(pkg_dir):
+        print(f"Error: Directory for package '{args.pkgname}' already exists at {pkg_dir}.", file=sys.stderr)
+        sys.exit(1)
+        
+    try:
+        os.makedirs(pkg_dir)
+        
+        # Create package.manifest
+        manifest_path = os.path.join(pkg_dir, "package.manifest")
+        manifest_content = textwrap.dedent(f"""\
+            [package]
+            name = "{args.pkgname}"
+            version = "{args.version}"
+            description = "{args.description or f"Template package description for {args.pkgname}"}"
+            dependencies = []
+            group = "{args.group}"
+
+            [[sources]]
+            url = "https://example.com/{args.pkgname}-{args.version}.tar.gz"
+            checksum = {{ algorithm = "sha256", value = "" }}
+
+            [build]
+            dependencies = []
+        """)
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            f.write(manifest_content)
+            
+        # Create package.justfile
+        justfile_path = os.path.join(pkg_dir, "package.justfile")
+        justfile_content = textwrap.dedent("""\
+            build:
+                tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
+                cd $PKG_NAME-$PKG_VERSION && ./configure --prefix=/usr && make -j$(nproc)
+
+            package:
+                cd $PKG_NAME-$PKG_VERSION && make DESTDIR="$DESTDIR" install
+                find "$DESTDIR" -type d -exec chmod 755 {} +
+                if [ -d "$DESTDIR/usr/lib" ]; then find "$DESTDIR/usr/lib" -name "*.so*" -exec chmod 755 {} + || true; fi
+        """)
+        with open(justfile_path, "w", encoding="utf-8") as f:
+            f.write(justfile_content)
+            
+        print(f"Successfully created package skeleton for '{args.pkgname}' at {pkg_dir} ✓")
+    except Exception as e:
+        print(f"Error creating package skeleton: {e}", file=sys.stderr)
+        sys.exit(1)
+
 # ==============================================================================
 # Main CLI Entrypoint
 # ==============================================================================
@@ -606,6 +664,13 @@ def main():
     info_parser = subparsers.add_parser("info", help="Get metadata info for a package")
     info_parser.add_argument("pkgname", help="Name of the package to query")
 
+    # Create Command
+    create_parser = subparsers.add_parser("create", help="Create a new package skeleton")
+    create_parser.add_argument("pkgname", help="Name of the package to create")
+    create_parser.add_argument("--version", default="1.0.0", help="Version of the package (default: 1.0.0)")
+    create_parser.add_argument("--description", default="", help="Description of the package")
+    create_parser.add_argument("--group", default="extra", help="Group of the package (default: extra)")
+
     args = parser.parse_args()
 
     if args.command == "resolve":
@@ -616,6 +681,8 @@ def main():
         handle_build(args)
     elif args.command == "info":
         handle_info(args)
+    elif args.command == "create":
+        handle_create(args)
 
 if __name__ == "__main__":
     main()
