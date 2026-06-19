@@ -64,3 +64,29 @@ sudo build/straylight build packages/<package-name>
 ```
 
 Successfully compiled packages will generate `.tgz` or target tarball outputs in the workspace build directory.
+
+## Workspace Package Tool (`fspack.py`)
+
+A unified helper script `fspack.py` is included in this repository to automate dependency resolution, packaging conversion, and container builds.
+
+### 1. Convert Arch Linux PKGBUILDs
+To bootstrap a new package from the Arch Linux Packaging system:
+```bash
+python3 packages/fspack.py convert <pkgname>
+```
+
+### 2. Resolve Dependency Order
+To resolve the topologically sorted build order for specific package groups (e.g. `base`, `builder`):
+```bash
+python3 packages/fspack.py resolve base builder
+```
+
+### 3. Container Sandboxed Builds
+To build a single package or a whole group inside the compilation sandbox container:
+```bash
+# Build a single package
+sudo python3 packages/fspack.py build --pkg <pkgname>
+
+# Build an entire group of packages in order
+sudo python3 packages/fspack.py build --group base
+```
