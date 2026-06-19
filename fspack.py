@@ -539,6 +539,45 @@ def handle_build(args):
         print("Error: Specify either --pkg <pkg_name> or --group <group_name>", file=sys.stderr)
         sys.exit(1)
 
+def handle_info(args):
+    """CLI handler to print package metadata in an easy-to-parse format for shell scripts."""
+    packages_dir = get_packages_dir()
+    pkg_dir = os.path.join(packages_dir, args.pkgname)
+    manifest_path = os.path.join(pkg_dir, "package.manifest")
+    
+    if not os.path.isfile(manifest_path):
+        print(f"Error: Manifest not found for package {args.pkgname}", file=sys.stderr)
+        sys.exit(1)
+        
+    try:
+        manifest = load_manifest(manifest_path)
+        print(manifest.package.name)
+        print(manifest.package.version)
+        print(manifest.package.group or "")
+        print(pkg_dir)
+        print(manifest.package.description)
+        print(" ".join(manifest.package.dependencies))
+        
+        import json as j
+        for src in manifest.sources:
+            src_dict = {}
+            if src.url: src_dict["url"] = src.url
+            if src.file: src_dict["file"] = src.file
+            if src.git: src_dict["git"] = src.git
+            if src.ref != "HEAD": src_dict["ref"] = src.ref
+            if src.checksum:
+                src_dict["checksum"] = {
+                    "algorithm": src.checksum.algorithm,
+                    "value": src.checksum.value
+                }
+            print("SOURCE:" + j.dumps(src_dict))
+            
+        for k, v in manifest.build.environment.items():
+            print(f"ENV:{k}={v}")
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
 # ==============================================================================
 # Main CLI Entrypoint
 # ==============================================================================
@@ -563,6 +602,10 @@ def main():
     build_group.add_argument("--pkg", help="Build a single package")
     build_group.add_argument("--group", help="Build a package group")
 
+    # Info Command
+    info_parser = subparsers.add_parser("info", help="Get metadata info for a package")
+    info_parser.add_argument("pkgname", help="Name of the package to query")
+
     args = parser.parse_args()
 
     if args.command == "resolve":
@@ -571,6 +614,8 @@ def main():
         handle_convert(args)
     elif args.command == "build":
         handle_build(args)
+    elif args.command == "info":
+        handle_info(args)
 
 if __name__ == "__main__":
     main()
