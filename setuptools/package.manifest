@@ -1,0 +1,13 @@
+[package]
+name = "setuptools"
+version = "69.5.1"
+description = "Easily download, build, install, upgrade, and uninstall Python packages"
+dependencies = ["python3"]
+group = "builder"
+
+[[sources]]
+url = "https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-69.5.1.tar.gz"
+checksum = { algorithm = "sha256", value = "6c1fccdac05a97e598fb0ae3bbed5904ccb317337a51139dcd51453611bbb987" }
+
+[build]
+dependencies = ["python3"]

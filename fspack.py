@@ -179,10 +179,98 @@ def resolve_dependencies(target_groups):
 
     return [name for name in ordered if name in target_pkgs]
 
+def resolve_package_dependencies(pkg_name):
+    """Returns a topologically sorted list of packages needed to build pkg_name (including pkg_name itself)."""
+    packages_dir = get_packages_dir()
+    manifests = load_all_manifests(packages_dir)
+    
+    if pkg_name not in manifests:
+        raise Exception(f"Package {pkg_name} not found in manifests")
+        
+    all_needed = set()
+    collect_deps(pkg_name, manifests, all_needed)
+
+    in_degree = {name: 0 for name in all_needed}
+    adj = {name: [] for name in all_needed}
+
+    for name in all_needed:
+        data = manifests[name]
+        runtime_deps = data.package.dependencies
+        build_deps = data.build.dependencies
+        for dep in set(runtime_deps + build_deps):
+            if dep in all_needed:
+                adj[dep].append(name)
+                in_degree[name] += 1
+
+    from collections import deque
+    queue = deque(sorted(n for n in all_needed if in_degree[n] == 0))
+    ordered = []
+    while queue:
+        node = queue.popleft()
+        ordered.append(node)
+        for neighbour in sorted(adj[node]):
+            in_degree[neighbour] -= 1
+            if in_degree[neighbour] == 0:
+                queue.append(neighbour)
+
+    if len(ordered) != len(all_needed):
+        raise Exception("Dependency cycle detected among packages")
+
+    return ordered
+
+def resolve_group_dependencies(group_name):
+    """Returns a topologically sorted list of packages needed to build a group (including all transitive dependencies)."""
+    packages_dir = get_packages_dir()
+    manifests = load_all_manifests(packages_dir)
+    
+    target_pkgs = {
+        name for name, data in manifests.items()
+        if data.package.group == group_name
+    }
+
+    all_needed = set()
+    for name in target_pkgs:
+        collect_deps(name, manifests, all_needed)
+
+    in_degree = {name: 0 for name in all_needed}
+    adj = {name: [] for name in all_needed}
+
+    for name in all_needed:
+        data = manifests[name]
+        runtime_deps = data.package.dependencies
+        build_deps = data.build.dependencies
+        for dep in set(runtime_deps + build_deps):
+            if dep in all_needed:
+                adj[dep].append(name)
+                in_degree[name] += 1
+
+    from collections import deque
+    queue = deque(sorted(n for n in all_needed if in_degree[n] == 0))
+    ordered = []
+    while queue:
+        node = queue.popleft()
+        ordered.append(node)
+        for neighbour in sorted(adj[node]):
+            in_degree[neighbour] -= 1
+            if in_degree[neighbour] == 0:
+                queue.append(neighbour)
+
+    if len(ordered) != len(all_needed):
+        raise Exception("Dependency cycle detected among packages")
+
+    return ordered
+
 def handle_resolve(args):
     """CLI handler for resolve."""
     try:
-        ordered = resolve_dependencies(set(args.groups))
+        if args.pkg:
+            ordered = resolve_package_dependencies(args.pkg)
+        elif args.group:
+            ordered = resolve_group_dependencies(args.group)
+        elif args.groups:
+            ordered = resolve_dependencies(set(args.groups))
+        else:
+            raise Exception("Specify either --pkg <pkg_name>, --group <group_name>, or positional group names")
         for pkg in ordered:
             print(pkg)
     except Exception as e:
@@ -429,7 +517,7 @@ def build_package_impl(pkg_name):
     print(f"[{pkg_name}] Building {pkg_name}-{pkg_version} (group: {pkg_group})")
     print("=" * 64)
 
-    ws = f"/tmp/build/{pkg_name}-{pkg_version}"
+    ws = f"/workspace/build/workspace/{pkg_name}-{pkg_version}"
     src_dir = f"{ws}/src"
     dest_dir = f"{ws}/dest"
     
@@ -523,9 +611,21 @@ def handle_build(args):
         print("Error: fspack build command must be run with root/sudo privileges.", file=sys.stderr)
         sys.exit(1)
 
+    if args.group and args.with_deps:
+        print("Error: --with-deps is only supported with --pkg", file=sys.stderr)
+        sys.exit(1)
+
     if args.pkg:
         try:
-            build_package_impl(args.pkg)
+            if args.with_deps:
+                print(f"Resolving build order for package: {args.pkg} and its dependencies...")
+                ordered_packages = resolve_package_dependencies(args.pkg)
+                print(f"Found {len(ordered_packages)} packages to build: {ordered_packages}")
+                for pkg in ordered_packages:
+                    build_package_impl(pkg)
+                print(f"\nBuild Complete for: {args.pkg} and dependencies ✓")
+            else:
+                build_package_impl(args.pkg)
         except Exception as e:
             print(f"Build Failed: {e}", file=sys.stderr)
             sys.exit(1)
@@ -546,7 +646,7 @@ def handle_build(args):
         sys.exit(1)
 
 def handle_info(args):
-    """CLI handler to print package metadata in an easy-to-parse format for shell scripts."""
+    """CLI handler to print package metadata."""
     packages_dir = get_packages_dir()
     pkg_dir = os.path.join(packages_dir, args.pkgname)
     manifest_path = os.path.join(pkg_dir, "package.manifest")
@@ -557,29 +657,63 @@ def handle_info(args):
         
     try:
         manifest = load_manifest(manifest_path)
-        print(manifest.package.name)
-        print(manifest.package.version)
-        print(manifest.package.group or "")
-        print(pkg_dir)
-        print(manifest.package.description)
-        print(" ".join(manifest.package.dependencies))
-        
-        import json as j
-        for src in manifest.sources:
-            src_dict = {}
-            if src.url: src_dict["url"] = src.url
-            if src.file: src_dict["file"] = src.file
-            if src.git: src_dict["git"] = src.git
-            if src.ref != "HEAD": src_dict["ref"] = src.ref
-            if src.checksum:
-                src_dict["checksum"] = {
-                    "algorithm": src.checksum.algorithm,
-                    "value": src.checksum.value
-                }
-            print("SOURCE:" + j.dumps(src_dict))
+        if args.simple:
+            print(manifest.package.name)
+            print(manifest.package.version)
+            print(manifest.package.group or "")
+            print(pkg_dir)
+            print(manifest.package.description)
+            print(" ".join(manifest.package.dependencies))
             
-        for k, v in manifest.build.environment.items():
-            print(f"ENV:{k}={v}")
+            import json as j
+            for src in manifest.sources:
+                src_dict = {}
+                if src.url: src_dict["url"] = src.url
+                if src.file: src_dict["file"] = src.file
+                if src.git: src_dict["git"] = src.git
+                if src.ref != "HEAD": src_dict["ref"] = src.ref
+                if src.checksum:
+                    src_dict["checksum"] = {
+                        "algorithm": src.checksum.algorithm,
+                        "value": src.checksum.value
+                    }
+                print("SOURCE:" + j.dumps(src_dict))
+                
+            for k, v in manifest.build.environment.items():
+                print(f"ENV:{k}={v}")
+        else:
+            print(f"Package:      {manifest.package.name}")
+            print(f"Version:      {manifest.package.version}")
+            print(f"Group:        {manifest.package.group or 'None'}")
+            print(f"Path:         {pkg_dir}")
+            print(f"Description:  {manifest.package.description}")
+            print(f"Dependencies: {', '.join(manifest.package.dependencies) if manifest.package.dependencies else 'None'}")
+            
+            if manifest.sources:
+                print("\nSources:")
+                for src in manifest.sources:
+                    if src.url:
+                        checksum_str = f" [{src.checksum.algorithm}: {src.checksum.value}]" if src.checksum else ""
+                        print(f"  - {src.url}{checksum_str}")
+                    elif src.file:
+                        print(f"  - Local File: {src.file}")
+                    elif src.git:
+                        print(f"  - Git Repo: {src.git} (ref: {src.ref})")
+            
+            env_vars = {}
+            env_vars["PKG_NAME"] = manifest.package.name
+            env_vars["PKG_VERSION"] = manifest.package.version
+            env_vars["PKG_DESCRIPTION"] = manifest.package.description
+            env_vars["PKG_GROUP"] = manifest.package.group or ""
+            env_vars["PKG_DEPENDENCIES"] = " ".join(manifest.package.dependencies)
+            
+            for k, v in manifest.build.environment.items():
+                env_vars[k] = str(v)
+                
+            if env_vars:
+                print("\nEnvironment Variables:")
+                for k, v in sorted(env_vars.items()):
+                    print(f"  - {k} = {v}")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -648,7 +782,10 @@ def main():
 
     # Resolve Command
     resolve_parser = subparsers.add_parser("resolve", help="Resolve topologically sorted package order")
-    resolve_parser.add_argument("groups", nargs="+", help="Groups to resolve (e.g. base builder)")
+    resolve_group = resolve_parser.add_mutually_exclusive_group(required=False)
+    resolve_group.add_argument("--pkg", help="Resolve dependencies for a single package")
+    resolve_group.add_argument("--group", help="Resolve dependencies for a package group")
+    resolve_parser.add_argument("groups", nargs="*", help="Groups to resolve (e.g. base builder)")
 
     # Convert Command
     convert_parser = subparsers.add_parser("convert", help="Convert an Arch Linux PKGBUILD to Freeside format")
@@ -659,10 +796,12 @@ def main():
     build_group = build_parser.add_mutually_exclusive_group(required=True)
     build_group.add_argument("--pkg", help="Build a single package")
     build_group.add_argument("--group", help="Build a package group")
+    build_parser.add_argument("--with-deps", action="store_true", help="Build package dependencies too")
 
     # Info Command
     info_parser = subparsers.add_parser("info", help="Get metadata info for a package")
     info_parser.add_argument("pkgname", help="Name of the package to query")
+    info_parser.add_argument("--simple", action="store_true", help="Print raw metadata in simple line-by-line format for scripting")
 
     # Create Command
     create_parser = subparsers.add_parser("create", help="Create a new package skeleton")

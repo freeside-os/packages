@@ -1,0 +1,13 @@
+[package]
+name = "cmake"
+version = "3.29.3"
+description = "Cross-platform, open-source build system"
+dependencies = ["musl"]
+group = "builder"
+
+[[sources]]
+url = "https://github.com/Kitware/CMake/releases/download/v3.29.3/cmake-3.29.3.tar.gz"
+checksum = { algorithm = "sha256", value = "252aee1448d49caa04954fd5e27d189dd51570557313e7b281636716a238bccb" }
+
+[build]
+dependencies = ["musl", "make"]
