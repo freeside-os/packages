@@ -93,3 +93,16 @@ sudo python3 packages/fspack.py build --pkg <pkgname>
 # Build an entire group of packages in order
 sudo python3 packages/fspack.py build --group base
 ```
+
+### 4. List Groups and Packages
+To view package groups and packages:
+```bash
+# List all active package groups and the packages in each group
+python3 packages/fspack.py list
+
+# List only the names of the active package groups
+python3 packages/fspack.py list --groups
+
+# List all packages in a specific package group (e.g., system)
+python3 packages/fspack.py list --group system
+```

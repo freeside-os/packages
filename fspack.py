@@ -278,6 +278,37 @@ def handle_resolve(args):
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
+def handle_list(args):
+    """CLI handler to list packages and groups."""
+    try:
+        packages_dir = get_packages_dir()
+        manifests = load_all_manifests(packages_dir)
+        
+        groups = {}
+        for name, manifest in manifests.items():
+            g = manifest.package.group
+            if g:
+                groups.setdefault(g, []).append(name)
+        
+        if args.group:
+            target_group = args.group
+            if target_group not in groups:
+                print(f"Error: Group '{target_group}' not found", file=sys.stderr)
+                sys.exit(1)
+            for pkg in sorted(groups[target_group]):
+                print(pkg)
+        elif args.groups:
+            for group in sorted(groups.keys()):
+                print(group)
+        else:
+            for group in sorted(groups.keys()):
+                print(f"{group}:")
+                for pkg in sorted(groups[group]):
+                    print(f"  {pkg}")
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
 # ==============================================================================
 # Commands: CONVERT
 # ==============================================================================
@@ -838,6 +869,12 @@ def main():
     create_parser.add_argument("--description", default="", help="Description of the package")
     create_parser.add_argument("--group", default="extra", help="Group of the package (default: extra)")
 
+    # List Command
+    list_parser = subparsers.add_parser("list", help="List package groups and packages")
+    list_group = list_parser.add_mutually_exclusive_group(required=False)
+    list_group.add_argument("--group", help="List all packages in a given group")
+    list_group.add_argument("--groups", action="store_true", help="List only the names of the groups")
+
     args = parser.parse_args()
 
     if args.command == "resolve":
@@ -850,6 +887,8 @@ def main():
         handle_info(args)
     elif args.command == "create":
         handle_create(args)
+    elif args.command == "list":
+        handle_list(args)
 
 if __name__ == "__main__":
     main()
