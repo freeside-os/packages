@@ -48,19 +48,22 @@ Typical layout:
 ```just
 # Build target: compiles the source code
 build:
-    ./configure {{env_var("CONFIGURE_ARGS")}}
-    make {{env_var("MAKE_FLAGS")}}
+    ./configure $CONFIGURE_ARGS
+    make
 
 # Package target: installs build output into DESTDIR staging directory
 package:
-    make DESTDIR={{env_var("DESTDIR")}} install
+    make DESTDIR="$DESTDIR" install
 ```
 
 ## How to Build Packages
 
 To compile a package, use the `straylight` CLI tool inside the workspace:
 ```bash
-sudo build/straylight build packages/<package-name>
+STRAYLIGHT_PACKAGES_ROOT="$(pwd)/packages" \
+STRAYLIGHT_BUILDER_ROOT="$(pwd)/build" \
+STRAYLIGHT_BUILDER_OUTPUT_ROOT="$(pwd)/build/packages" \
+sudo -E build/straylight build --pkg <package-name>
 ```
 
 Successfully compiled packages will generate `.tgz` or target tarball outputs in the workspace build directory.

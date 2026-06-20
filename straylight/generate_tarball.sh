@@ -20,7 +20,7 @@ name = "straylight"
 version = "1.0.0"
 description = "Straylight Package Manager CLI"
 dependencies = ["musl", "rust"]
-group = "base"
+group = "system"
 
 [[sources]]
 file = "straylight-1.0.0.tar.gz"

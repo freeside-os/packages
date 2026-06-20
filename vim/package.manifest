@@ -10,4 +10,7 @@ url = "https://github.com/vim/vim/archive/refs/tags/v9.1.1000.tar.gz"
 checksum = { algorithm = "sha256", value = "c8ccd457bba5563513ab3e2088ad10d62b982682af9a9278686b48202b8c7697" }
 
 [build]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --with-features=huge --enable-multibyte --disable-gui --without-x --disable-nls --enable-terminal"
 dependencies = ["musl", "ncurses"]

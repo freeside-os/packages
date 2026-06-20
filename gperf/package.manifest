@@ -13,4 +13,5 @@ checksum = { algorithm = "sha256", value = "588546b945bba4b70b6a3a616e80b4ab466e
 dependencies = ["musl"]
 
 [build.environment]
+CONFIGURE_ARGS = "--prefix=/usr"
 CXXFLAGS = "-std=gnu++14"

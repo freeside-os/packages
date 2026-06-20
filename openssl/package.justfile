@@ -1,6 +1,6 @@
 build:
     tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
-    cd $PKG_NAME-$PKG_VERSION && ./config --prefix=/usr --openssldir=/etc/ssl --libdir=lib shared no-comp && make -j$(nproc)
+    cd $PKG_NAME-$PKG_VERSION && ./config $CONFIGURE_ARGS && make -j$(nproc)
 
 package:
     cd $PKG_NAME-$PKG_VERSION && make DESTDIR="$DESTDIR" install_sw

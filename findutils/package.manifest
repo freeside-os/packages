@@ -10,4 +10,7 @@ url = "https://ftp.gnu.org/gnu/findutils/findutils-4.10.0.tar.xz"
 checksum = { algorithm = "sha256", value = "1387e0b67ff247d2abde998f90dfbf70c1491391a59ddfecb8ae698789f0a4f5" }
 
 [build]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr"
 dependencies = ["musl"]

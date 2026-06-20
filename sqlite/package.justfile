@@ -1,6 +1,6 @@
 build:
     tar -xf sqlite-autoconf-$SQLITE_CODE.tar.gz
-    cd sqlite-autoconf-$SQLITE_CODE && ./configure --prefix=/usr && make -j$(nproc)
+    cd sqlite-autoconf-$SQLITE_CODE && ./configure $CONFIGURE_ARGS && make -j$(nproc)
 
 package:
     cd sqlite-autoconf-$SQLITE_CODE && make DESTDIR="$DESTDIR" install

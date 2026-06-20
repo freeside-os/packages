@@ -1,6 +1,6 @@
 build:
     tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
-    cd $PKG_NAME-$PKG_VERSION && ./configure --prefix=/usr --disable-nls && make -j$(nproc)
+    cd $PKG_NAME-$PKG_VERSION && ./configure $CONFIGURE_ARGS && make -j$(nproc)
 
 package:
     cd $PKG_NAME-$PKG_VERSION && make DESTDIR="$DESTDIR" install

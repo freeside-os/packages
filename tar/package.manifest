@@ -13,4 +13,5 @@ checksum = { algorithm = "sha256", value = "4d62ff37342ec7aed748535323930c7cf94a
 dependencies = ["musl"]
 
 [build.environment]
+CONFIGURE_ARGS = "--prefix=/usr"
 FORCE_UNSAFE_CONFIGURE = "1"

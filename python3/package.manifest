@@ -10,4 +10,7 @@ url = "https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz"
 checksum = { algorithm = "sha256", value = "56bfef1fdfc1221ce6720e43a661e3eb41785dd914ce99698d8c7896af4bdaa1" }
 
 [build]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --enable-shared --with-ensurepip=yes --with-openssl=/usr ac_cv_header_libintl_h=no ac_cv_lib_intl_textdomain=no"
 dependencies = ["musl", "zlib", "openssl", "bzip2", "xz"]

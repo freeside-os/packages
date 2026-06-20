@@ -1,9 +1,6 @@
 build:
     tar -xf expat-$PKG_VERSION.tar.xz
-    cd expat-$PKG_VERSION && ./configure \
-        --prefix=/usr \
-        --enable-shared \
-        --enable-static
+    cd expat-$PKG_VERSION && ./configure $CONFIGURE_ARGS
     cd expat-$PKG_VERSION && make -j$(nproc)
 
 package:

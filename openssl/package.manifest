@@ -13,4 +13,5 @@ checksum = { algorithm = "sha256", value = "53e66b043322a606abf0087e7699a0e033a3
 dependencies = ["musl"]
 
 [build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --openssldir=/etc/ssl --libdir=lib shared no-comp"
 CC = "clang"

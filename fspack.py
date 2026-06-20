@@ -770,6 +770,9 @@ def handle_create(args):
 
             [build]
             dependencies = []
+
+            [build.environment]
+            CONFIGURE_ARGS = "--prefix=/usr"
         """)
         with open(manifest_path, "w", encoding="utf-8") as f:
             f.write(manifest_content)
@@ -779,7 +782,7 @@ def handle_create(args):
         justfile_content = textwrap.dedent("""\
             build:
                 tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
-                cd $PKG_NAME-$PKG_VERSION && ./configure --prefix=/usr && make -j$(nproc)
+                cd $PKG_NAME-$PKG_VERSION && ./configure $CONFIGURE_ARGS && make -j$(nproc)
 
             package:
                 cd $PKG_NAME-$PKG_VERSION && make DESTDIR="$DESTDIR" install

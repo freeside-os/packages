@@ -1,9 +1,6 @@
 build:
     tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
-    cd $PKG_NAME-$PKG_VERSION && ./configure \
-        --prefix=/usr \
-        --enable-shared \
-        --disable-static
+    cd $PKG_NAME-$PKG_VERSION && ./configure $CONFIGURE_ARGS
     cd $PKG_NAME-$PKG_VERSION && make -j$(nproc)
 
 package:

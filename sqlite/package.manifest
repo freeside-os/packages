@@ -13,4 +13,5 @@ checksum = { algorithm = "sha256", value = "b2809ca53124c19c60f42bf627736eae011a
 dependencies = ["musl"]
 
 [build.environment]
+CONFIGURE_ARGS = "--prefix=/usr"
 SQLITE_CODE = "3450300"

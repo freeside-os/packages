@@ -10,4 +10,7 @@ url = "https://github.com/libarchive/libarchive/releases/download/v3.7.4/libarch
 checksum = { algorithm = "sha256", value = "7875d49596286055b52439ed42f044bd8ad426aa4cc5aabd96bfe7abb971d5e8" }
 
 [build]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --disable-static"
 dependencies = ["musl", "zlib"]

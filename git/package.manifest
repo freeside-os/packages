@@ -10,4 +10,7 @@ url = "https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.45.1.tar.xz"
 checksum = { algorithm = "sha256", value = "e64d340a8e627ae22cfb8bcc651cca0b497cf1e9fdf523735544ff4a732f12bf" }
 
 [build]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --with-openssl --without-tcltk --without-gettext"
 dependencies = ["musl", "openssl"]

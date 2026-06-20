@@ -1,6 +1,6 @@
 build:
     tar -xf $PKG_NAME-$PKG_VERSION.tar.gz
-    cd $PKG_NAME-$PKG_VERSION && ./configure --prefix=/usr --with-shared --without-debug --enable-widec --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig && make -j$(nproc)
+    cd $PKG_NAME-$PKG_VERSION && ./configure $CONFIGURE_ARGS && make -j$(nproc)
 
 package:
     cd $PKG_NAME-$PKG_VERSION && make DESTDIR="$DESTDIR" install
