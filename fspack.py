@@ -13,6 +13,7 @@ import tomllib
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 import ssl
+from datetime import datetime
 
 try:
     ssl._create_default_https_context = ssl._create_unverified_context
@@ -489,7 +490,7 @@ def fetch_source_url(url, dest_dir, checksum_algo=None, checksum_val=None):
             raise Exception(f"Integrity check failed for {filename}! Expected SHA256: {checksum_val}, Got: {actual}")
         print(f"  Checksum OK: {filename}")
 
-def build_package_impl(pkg_name):
+def build_package_impl(pkg_name, keep_all_logs=False):
     """Builds and packages a single package inside the container."""
     packages_dir = get_packages_dir()
     pkg_dir = os.path.join(packages_dir, pkg_name)
@@ -560,19 +561,39 @@ def build_package_impl(pkg_name):
     for k, v in manifest.build.environment.items():
         env[k] = str(v)
 
-    print(f"[{pkg_name}] Running: just build")
-    subprocess.run(
-        ["just", "-f", os.path.join(ws, "package.justfile"), "-d", src_dir, "build"], 
-        env=env, 
-        check=True
-    )
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_path = os.path.join(ws_root, f"{pkg_name}-{ts}.log")
+    print(f"[{pkg_name}] Logging build output to {log_path}")
 
-    print(f"[{pkg_name}] Running: just package")
-    subprocess.run(
-        ["just", "-f", os.path.join(ws, "package.justfile"), "-d", src_dir, "package"], 
-        env=env, 
-        check=True
-    )
+    build_success = False
+    try:
+        with open(log_path, "w", encoding="utf-8") as log_file:
+            print(f"[{pkg_name}] Running: just build")
+            subprocess.run(
+                ["just", "-f", os.path.join(ws, "package.justfile"), "-d", src_dir, "build"], 
+                env=env, 
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                check=True
+            )
+            print(f"[{pkg_name}] Running: just package")
+            subprocess.run(
+                ["just", "-f", os.path.join(ws, "package.justfile"), "-d", src_dir, "package"], 
+                env=env, 
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                check=True
+            )
+        build_success = True
+    except subprocess.CalledProcessError as e:
+        print(f"[{pkg_name}] Build failed! See log at {log_path}", file=sys.stderr)
+        raise e
+    finally:
+        if build_success and not keep_all_logs:
+            try:
+                os.remove(log_path)
+            except OSError:
+                pass
 
     staging_dir = os.path.join(ws, "staging")
     os.makedirs(os.path.join(staging_dir, "meta"), exist_ok=True)
@@ -623,10 +644,10 @@ def handle_build(args):
                 ordered_packages = resolve_package_dependencies(args.pkg)
                 print(f"Found {len(ordered_packages)} packages to build: {ordered_packages}")
                 for pkg in ordered_packages:
-                    build_package_impl(pkg)
+                    build_package_impl(pkg, keep_all_logs=args.keep_all_logs)
                 print(f"\nBuild Complete for: {args.pkg} and dependencies ✓")
             else:
-                build_package_impl(args.pkg)
+                build_package_impl(args.pkg, keep_all_logs=args.keep_all_logs)
         except Exception as e:
             print(f"Build Failed: {e}", file=sys.stderr)
             sys.exit(1)
@@ -637,7 +658,7 @@ def handle_build(args):
             print(f"Found {len(ordered_packages)} packages in group: {ordered_packages}")
             
             for pkg in ordered_packages:
-                build_package_impl(pkg)
+                build_package_impl(pkg, keep_all_logs=args.keep_all_logs)
             print(f"\nGroup Build Complete for: {args.group} ✓")
         except Exception as e:
             print(f"Group Build Failed: {e}", file=sys.stderr)
@@ -798,6 +819,7 @@ def main():
     build_group.add_argument("--pkg", help="Build a single package")
     build_group.add_argument("--group", help="Build a package group")
     build_parser.add_argument("--with-deps", action="store_true", help="Build package dependencies too")
+    build_parser.add_argument("--keep-all-logs", action="store_true", help="Keep build log files even on success")
 
     # Info Command
     info_parser = subparsers.add_parser("info", help="Get metadata info for a package")
