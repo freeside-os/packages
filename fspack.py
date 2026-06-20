@@ -470,16 +470,16 @@ def generate_files_ledger(staging_dir):
             entries.append(f"[[files]]\npath = \"{path_str}\"\nsha256 = \"{sha256}\"\nsize = {size}\nmode = \"{mode}\"\nuid = {uid}\ngid = {gid}\n")
     return "\n".join(entries)
 
-def install_package(tarball_path):
+def install_package(tarball_path, prefix=""):
     """Installs a compiled package tarball into the container root /."""
-    print(f"Installing {os.path.basename(tarball_path)} into container root (/)....")
+    print(f"{prefix}Installing {os.path.basename(tarball_path)}")
     subprocess.run(["tar", "-xzf", tarball_path, "--exclude=meta/*", "-C", "/"], check=True)
 
-def fetch_source_url(url, dest_dir, checksum_algo=None, checksum_val=None):
+def fetch_source_url(url, dest_dir, checksum_algo=None, checksum_val=None, prefix=""):
     """Downloads source from a URL and verifies checksum."""
     filename = url.split('/')[-1].split('?')[0]
     dest_path = os.path.join(dest_dir, filename)
-    print(f"  Downloading {url} -> {dest_path}...")
+    print(f"{prefix}  Downloading {url}...")
     
     urllib.request.urlretrieve(url, dest_path)
     
@@ -488,10 +488,13 @@ def fetch_source_url(url, dest_dir, checksum_algo=None, checksum_val=None):
         if actual != checksum_val:
             os.remove(dest_path)
             raise Exception(f"Integrity check failed for {filename}! Expected SHA256: {checksum_val}, Got: {actual}")
-        print(f"  Checksum OK: {filename}")
+        print(f"{prefix}  Checksum OK: {filename}")
 
-def build_package_impl(pkg_name, keep_all_logs=False):
+def build_package_impl(pkg_name, keep_all_logs=False, current_idx=1, total_count=1):
     """Builds and packages a single package inside the container."""
+    progress = f"[{current_idx}/{total_count}]"
+    pkg_name_fmt = f"[{pkg_name}]"
+    prefix = f"{progress:<10}{pkg_name_fmt:<20}"
     packages_dir = get_packages_dir()
     pkg_dir = os.path.join(packages_dir, pkg_name)
     manifest_path = os.path.join(pkg_dir, "package.manifest")
@@ -510,13 +513,11 @@ def build_package_impl(pkg_name, keep_all_logs=False):
     tarball_path = os.path.join(output_dir, tarball_name)
     
     if os.path.isfile(tarball_path):
-        print(f"[{pkg_name}] Already built — skipping compilation ({tarball_name})")
-        install_package(tarball_path)
+        print(f"{prefix}Compiling... skipped")
+        install_package(tarball_path, prefix)
         return True
 
-    print("=" * 64)
-    print(f"[{pkg_name}] Building {pkg_name}-{pkg_version} (group: {pkg_group})")
-    print("=" * 64)
+    print(f"{prefix}Compiling {pkg_name}-{pkg_version} (group: {pkg_group})...")
 
     ws_root = os.environ.get("STRAYLIGHT_BUILDER_ROOT", "/workspace/build")
     ws = os.path.join(ws_root, f"workspace/{pkg_name}-{pkg_version}")
@@ -528,22 +529,22 @@ def build_package_impl(pkg_name, keep_all_logs=False):
     os.makedirs(src_dir, exist_ok=True)
     os.makedirs(dest_dir, exist_ok=True)
     
-    print(f"[{pkg_name}] Fetching sources...")
+    print(f"{prefix}Fetching sources...")
     for source in manifest.sources:
         if source.url:
             algo = source.checksum.algorithm if source.checksum else None
             val = source.checksum.value if source.checksum else None
-            fetch_source_url(source.url, src_dir, algo, val)
+            fetch_source_url(source.url, src_dir, algo, val, prefix)
         elif source.file:
             src_file_path = os.path.join(pkg_dir, source.file)
             if not os.path.exists(src_file_path):
                 raise Exception(f"Local source file not found at {src_file_path}")
-            print(f"  Copying local file: {source.file}")
+            print(f"{prefix}  Copying local file: {source.file}")
             shutil.copy(src_file_path, os.path.join(src_dir, source.file))
         elif source.git:
             git_url = source.git
             ref = source.ref
-            print(f"  Cloning git repo: {git_url} (ref: {ref})")
+            print(f"{prefix}  Cloning git repo: {git_url} (ref: {ref})")
             subprocess.run(["git", "clone", "--depth=1", git_url, os.path.join(src_dir, pkg_name)], check=True)
             if ref != "HEAD":
                 subprocess.run(["git", "-C", os.path.join(src_dir, pkg_name), "checkout", ref], check=True)
@@ -563,12 +564,12 @@ def build_package_impl(pkg_name, keep_all_logs=False):
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     log_path = os.path.join(ws_root, f"{pkg_name}-{ts}.log")
-    print(f"[{pkg_name}] Logging build output to {log_path}")
+    print(f"{prefix}Logging build output to {log_path}")
 
     build_success = False
     try:
         with open(log_path, "w", encoding="utf-8") as log_file:
-            print(f"[{pkg_name}] Running: just build")
+            print(f"{prefix}Running: just build")
             subprocess.run(
                 ["just", "-f", os.path.join(ws, "package.justfile"), "-d", src_dir, "build"], 
                 env=env, 
@@ -576,7 +577,7 @@ def build_package_impl(pkg_name, keep_all_logs=False):
                 stderr=subprocess.STDOUT,
                 check=True
             )
-            print(f"[{pkg_name}] Running: just package")
+            print(f"{prefix}Running: just package")
             subprocess.run(
                 ["just", "-f", os.path.join(ws, "package.justfile"), "-d", src_dir, "package"], 
                 env=env, 
@@ -586,7 +587,7 @@ def build_package_impl(pkg_name, keep_all_logs=False):
             )
         build_success = True
     except subprocess.CalledProcessError as e:
-        print(f"[{pkg_name}] Build failed! See log at {log_path}", file=sys.stderr)
+        print(f"{prefix}Build failed! See log at {log_path}", file=sys.stderr)
         raise e
     finally:
         if build_success and not keep_all_logs:
@@ -612,19 +613,19 @@ def build_package_impl(pkg_name, keep_all_logs=False):
         else:
             shutil.copy(entry_path, os.path.join(staging_dir, entry))
 
-    print(f"[{pkg_name}] Generating files.toml ledger...")
+    print(f"{prefix}Generating files.toml ledger...")
     ledger_content = generate_files_ledger(staging_dir)
     with open(os.path.join(staging_dir, "meta/files.toml"), "w", encoding="utf-8") as f:
         f.write(ledger_content)
 
     os.makedirs(output_dir, exist_ok=True)
-    print(f"[{pkg_name}] Creating tarball: {tarball_name}")
+    print(f"{prefix}Creating tarball: {tarball_name}")
     subprocess.run(["tar", "-czf", tarball_path, "-C", staging_dir, "."], check=True)
 
-    install_package(tarball_path)
+    install_package(tarball_path, prefix)
 
     shutil.rmtree(ws)
-    print(f"[{pkg_name}] Done ✓")
+    print(f"{prefix}Compiling... done")
     return True
 
 def handle_build(args):
@@ -643,11 +644,12 @@ def handle_build(args):
                 print(f"Resolving build order for package: {args.pkg} and its dependencies...")
                 ordered_packages = resolve_package_dependencies(args.pkg)
                 print(f"Found {len(ordered_packages)} packages to build: {ordered_packages}")
-                for pkg in ordered_packages:
-                    build_package_impl(pkg, keep_all_logs=args.keep_all_logs)
+                total = len(ordered_packages)
+                for idx, pkg in enumerate(ordered_packages, 1):
+                    build_package_impl(pkg, keep_all_logs=args.keep_all_logs, current_idx=idx, total_count=total)
                 print(f"\nBuild Complete for: {args.pkg} and dependencies ✓")
             else:
-                build_package_impl(args.pkg, keep_all_logs=args.keep_all_logs)
+                build_package_impl(args.pkg, keep_all_logs=args.keep_all_logs, current_idx=1, total_count=1)
         except Exception as e:
             print(f"Build Failed: {e}", file=sys.stderr)
             sys.exit(1)
@@ -656,9 +658,9 @@ def handle_build(args):
             print(f"Resolving build order for group: {args.group}...")
             ordered_packages = resolve_dependencies({args.group})
             print(f"Found {len(ordered_packages)} packages in group: {ordered_packages}")
-            
-            for pkg in ordered_packages:
-                build_package_impl(pkg, keep_all_logs=args.keep_all_logs)
+            total = len(ordered_packages)
+            for idx, pkg in enumerate(ordered_packages, 1):
+                build_package_impl(pkg, keep_all_logs=args.keep_all_logs, current_idx=idx, total_count=total)
             print(f"\nGroup Build Complete for: {args.group} ✓")
         except Exception as e:
             print(f"Group Build Failed: {e}", file=sys.stderr)
