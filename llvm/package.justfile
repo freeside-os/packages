@@ -37,7 +37,7 @@ package:
 	ln -sf llvm-objdump "$DESTDIR/usr/bin/objdump"
 	ln -sf llvm-readelf "$DESTDIR/usr/bin/readelf"
 	ln -sf lld "$DESTDIR/usr/bin/ld"
-	BUILTINS_LIB=$(find "$DESTDIR/usr/lib/clang" -name "libclang_rt.builtins.a" | head -n1)
+	BUILTINS_LIB=$(find "$DESTDIR/usr/lib/clang" -path "*x86_64*/libclang_rt.builtins.a" | head -n1)
 	if [ -n "$BUILTINS_LIB" ]; then
 		REL_PATH=$(realpath --relative-to="$DESTDIR/usr/lib" "$BUILTINS_LIB")
 		ln -sf "$REL_PATH" "$DESTDIR/usr/lib/libgcc.a"
