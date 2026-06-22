@@ -1,16 +1,10 @@
 [package]
 name = "zlib"
-version = "1.3.1"
-description = "A free, general-purpose, lossless data-compression library"
-dependencies = ["musl"]
+version = "1.3.2"
+description = "Compression library implementing the deflate compression method found in gzip and PKZIP"
 group = "base"
+dependencies = ["musl"]
 
 [[sources]]
-url = "https://zlib.net/fossils/zlib-1.3.1.tar.gz"
-checksum = { algorithm = "sha256", value = "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23" }
-
-[build]
-
-[build.environment]
-CONFIGURE_ARGS = "--prefix=/usr --shared"
-dependencies = ["musl"]
+url = "https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.xz"
+checksum = { algorithm = "sha256", value = "d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3" }

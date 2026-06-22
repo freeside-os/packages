@@ -138,6 +138,28 @@ def load_all_manifests_safe(packages_dir):
             pass
     return manifests
 
+def create_readme_file(pkg_dir, pkg_name, version, upstream_ref, source_url, checksum):
+    readme_path = os.path.join(pkg_dir, "README.md")
+    readme_content = textwrap.dedent(f"""\
+        # {pkg_name}
+        
+        Maintainer reference documentation for package version upgrades and security updates.
+        
+        | Field | Value |
+        | :--- | :--- |
+        | **Package Name** | {pkg_name} |
+        | **Version** | {version} |
+        | **Upstream Reference** | {upstream_ref} |
+        | **Source URL** | {source_url} |
+        | **Source Checksum (SHA256)** | {checksum} |
+        
+        ## Upgrade Notes
+        <!-- Wintermute or maintainers will add valuable upgrade notes below -->
+    """)
+    with open(readme_path, "w", encoding="utf-8") as f:
+        f.write(readme_content)
+    print(f"Created file: {os.path.relpath(readme_path)}")
+
 # ==============================================================================
 # Commands: RESOLVE
 # ==============================================================================
@@ -736,7 +758,7 @@ def generate_freeside_package(pkgbuild_content):
         justfile += "package:\n"
         justfile += textwrap.indent(package_body, "    ") + "\n"
     
-    return manifest_toml, justfile.strip()
+    return manifest_toml, justfile.strip(), pkgver, primary_source, primary_sha
 
 def handle_convert(args):
     """CLI handler for PKGBUILD conversion."""
@@ -750,11 +772,13 @@ def handle_convert(args):
         with open(os.path.join(pkgname, "PKGBUILD"), 'w', encoding='utf-8') as f:
             f.write(pkgbuild_content)
         
-        manifest, justfile = generate_freeside_package(pkgbuild_content)
+        manifest, justfile, pkgver, source_url, checksum = generate_freeside_package(pkgbuild_content)
         with open(os.path.join(pkgname, "package.manifest"), 'w', encoding='utf-8') as f:
             f.write(manifest)
         with open(os.path.join(pkgname, "package.justfile"), 'w', encoding='utf-8') as f:
             f.write(justfile)
+            
+        create_readme_file(pkgname, pkgname, pkgver, url, source_url, checksum)
         
         print("\nConversion successful!")
     except urllib.error.HTTPError as e:
@@ -1135,6 +1159,8 @@ def handle_create(args):
         """)
         with open(justfile_path, "w", encoding="utf-8") as f:
             f.write(justfile_content)
+            
+        create_readme_file(pkg_dir, args.pkgname, args.version, "None", f"https://example.com/{args.pkgname}-{args.version}.tar.gz", "")
             
         print(f"Successfully created package skeleton for '{args.pkgname}' at {pkg_dir} ✓")
     except Exception as e:
