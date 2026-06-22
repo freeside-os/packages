@@ -11,6 +11,9 @@ package:
     
     # Strict permissions and compliance
     find "{{env_var("DESTDIR")}}" -type d -exec chmod 755 {} +
+    if [ -d "{{env_var("DESTDIR")}}/usr/bin" ]; then \
+        find "{{env_var("DESTDIR")}}/usr/bin" -type f -exec chmod 755 {} + || true; \
+    fi
     if [ -d "{{env_var("DESTDIR")}}/usr/lib" ]; then \
         find "{{env_var("DESTDIR")}}/usr/lib" -name "*.so*" -exec chmod 755 {} + || true; \
     fi

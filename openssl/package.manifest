@@ -1,13 +1,13 @@
 [package]
 name = "openssl"
-version = "3.3.0"
+version = "3.3.1"
 description = "Secure Sockets Layer toolkit"
 dependencies = ["musl"]
 group = "base"
 
 [[sources]]
-url = "https://www.openssl.org/source/openssl-3.3.0.tar.gz"
-checksum = { algorithm = "sha256", value = "53e66b043322a606abf0087e7699a0e033a37fa13feb9742df35c3a33b18fb02" }
+url = "https://www.openssl.org/source/openssl-3.3.1.tar.gz"
+checksum = { algorithm = "sha256", value = "777cd596284c883375a2a7a11bf5d2786fc5413255efab20c50d6ffe6d020b7e" }
 
 [build]
 dependencies = ["musl"]

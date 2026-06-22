@@ -1,0 +1,7 @@
+# libarchive
+
+Multi-format archive and compression library.
+
+| Name | Version | Source URL | Checksum |
+| --- | --- | --- | --- |
+| libarchive | 3.7.4 | https://github.com/libarchive/libarchive/releases/download/v3.7.4/libarchive-3.7.4.tar.gz | 7875d49596286055b52439ed42f044bd8ad426aa4cc5aabd96bfe7abb971d5e8 |

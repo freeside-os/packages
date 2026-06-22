@@ -16,3 +16,4 @@ Maintainer reference documentation for package version upgrades and security upd
 - Explicitly enabled shared library support with `--shared`.
 - Removed `minizip` build as `autoreconf` is not available in the current build environment.
 - Added manual source extraction in `package.justfile` to ensure availability in the build directory.
+- Successfully built and verified zlib 1.3.2 inside the systemd-nspawn sandboxed container core.
