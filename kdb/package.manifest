@@ -1,0 +1,10 @@
+[package]
+name = "kdb"
+version = "3.2.0"
+description = "A database connectivity and creation framework for various database vendors"
+group = "system"
+dependencies = ["musl", "sqlite"]
+
+[[sources]]
+url = "https://download.kde.org/stable/kdb/src/kdb-3.2.0.tar.xz"
+checksum = { algorithm = "sha256", value = "8f8983bc8d143832dc14bc2003ba6af1af27688e477c0c791fd61445464f2069" }

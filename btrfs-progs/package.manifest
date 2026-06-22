@@ -1,0 +1,10 @@
+[package]
+name = "btrfs-progs"
+version = "7.0"
+description = "Btrfs filesystem utilities"
+group = "system"
+dependencies = ["musl", "openssl", "util-linux", "zlib", "zstd"]
+
+[[sources]]
+url = "https://mirrors.kernel.org/pub/linux/kernel/people/kdave/btrfs-progs/btrfs-progs-v7.0.tar.xz"
+checksum = { algorithm = "sha256", value = "c286d6876cbcd72327a0b417e4cfd280353ec23e37b549fdbcd7800a832d9a99" }

@@ -1,0 +1,10 @@
+[package]
+name = "cryptsetup"
+version = "2.8.6"
+group = "system"
+description = "Userspace setup tool for transparent encryption of block devices using dm-crypt"
+dependencies = ["musl", "openssl", "util-linux", "json-c"]
+
+[[sources]]
+url = "https://www.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-2.8.6.tar.xz"
+checksum = { algorithm = "sha256", value = "8004265fd993885d08f7b633dbe056851de1a210307613a4ebddc743fccefe5a" }

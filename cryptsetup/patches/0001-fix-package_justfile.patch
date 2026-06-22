@@ -1,0 +1,11 @@
+--- package.justfile
++++ package.justfile
+@@ -7,7 +7,7 @@
+     
+     curl -LO https://mirrors.kernel.org/sourceware/lvm2/LVM2.2.03.22.tgz
+     tar xf LVM2.2.03.22.tgz
+-    cd LVM2.2.03.22 && ./configure --prefix=/usr --enable-static_link || exit 1
++    cd LVM2.2.03.22 && LDFLAGS="-Wl,--undefined-version" ./configure --prefix=/usr --enable-static_link || exit 1
+     cd LVM2.2.03.22 && make device-mapper || true
+     cd LVM2.2.03.22/libdm && find . -name "*.o" | xargs ar rcs libdevmapper.a
+     cp LVM2.2.03.22/libdm/libdevmapper.a sysroot/lib/

@@ -1,0 +1,10 @@
+[package]
+name = "json-c"
+version = "0.17"
+group = "system"
+description = "A JSON implementation in C"
+dependencies = ["cmake", "ninja"]
+
+[[sources]]
+url = "https://github.com/json-c/json-c/archive/refs/tags/json-c-0.17-20230812.tar.gz"
+checksum = { algorithm = "sha256", value = "024d302a3aadcbf9f78735320a6d5aedf8b77876c8ac8bbb95081ca55054c7eb" }
