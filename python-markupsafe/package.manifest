@@ -1,0 +1,13 @@
+[package]
+name = "python-markupsafe"
+version = "2.1.5"
+description = "Safely add untrusted strings to HTML/XML markup"
+dependencies = ["python3"]
+group = "builder"
+
+[[sources]]
+url = "https://files.pythonhosted.org/packages/source/M/MarkupSafe/MarkupSafe-2.1.5.tar.gz"
+checksum = { algorithm = "sha256", value = "d283d37a890ba4c1ae73ffadf8046435c76e7bc2247bbb63c00bd1a709c6544b" }
+
+[build]
+dependencies = ["python3", "setuptools"]

@@ -1,0 +1,457 @@
+diff -Naur a/src/basic/alloc-util.h b/src/basic/alloc-util.h
+--- a/src/basic/alloc-util.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/alloc-util.h	2026-06-21 12:05:55.916401666 -0400
+@@ -240,6 +240,14 @@
+                 (char*) memdupa_suffix0(_t, strnlen(_t, (n)));          \
+         })
+ 
++#ifndef strdupa
++#define strdupa(s) strdupa_safe(s)
++#endif
++
++#ifndef strndupa
++#define strndupa(s, n) strndupa_safe(s, n)
++#endif
++
+ /* Free every element of the array. */
+ static inline void free_many(void **p, size_t n) {
+         assert(p || n == 0);
+diff -Naur a/src/basic/errno-util.h b/src/basic/errno-util.h
+--- a/src/basic/errno-util.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/errno-util.h	2026-06-21 11:26:11.424698813 -0400
+@@ -5,6 +5,14 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#undef strerror_r
++static inline char *safe_strerror_r(int errnum, char *buf, size_t buflen) {
++        if (strerror_r(errnum, buf, buflen) == 0)
++                return buf;
++        return buf;
++}
++#define strerror_r(errnum, buf, buflen) safe_strerror_r(errnum, buf, buflen)
++
+ #include "macro.h"
+ 
+ /* strerror(3) says that glibc uses a maximum length of 1024 bytes. */
+diff -Naur a/src/basic/glob-util.c b/src/basic/glob-util.c
+--- a/src/basic/glob-util.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/glob-util.c	2026-06-21 11:55:09.651626503 -0400
+@@ -12,9 +12,11 @@
+ #include "path-util.h"
+ #include "strv.h"
+ 
++#if GLOB_ALTDIRFUNC
+ static void closedir_wrapper(void* v) {
+         (void) closedir(v);
+ }
++#endif
+ 
+ int safe_glob(const char *path, int flags, glob_t *pglob) {
+         int k;
+@@ -22,6 +24,7 @@
+         /* We want to set GLOB_ALTDIRFUNC ourselves, don't allow it to be set. */
+         assert(!(flags & GLOB_ALTDIRFUNC));
+ 
++#if GLOB_ALTDIRFUNC
+         if (!pglob->gl_closedir)
+                 pglob->gl_closedir = closedir_wrapper;
+         if (!pglob->gl_readdir)
+@@ -32,6 +35,7 @@
+                 pglob->gl_lstat = lstat;
+         if (!pglob->gl_stat)
+                 pglob->gl_stat = stat;
++#endif
+ 
+         errno = 0;
+         k = glob(path, flags | GLOB_ALTDIRFUNC, NULL, pglob);
+diff -Naur a/src/basic/glob-util.h b/src/basic/glob-util.h
+--- a/src/basic/glob-util.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/glob-util.h	2026-06-21 11:54:00.376751299 -0400
+@@ -4,6 +4,14 @@
+ #include <glob.h>
+ #include <stdbool.h>
+ 
++#ifndef GLOB_ALTDIRFUNC
++#define GLOB_ALTDIRFUNC 0
++#endif
++
++#ifndef GLOB_BRACE
++#define GLOB_BRACE 0
++#endif
++
+ #include "macro.h"
+ #include "string-util.h"
+ 
+diff -Naur a/src/basic/linux/if_arp.h b/src/basic/linux/if_arp.h
+--- a/src/basic/linux/if_arp.h	1969-12-31 19:00:00.000000000 -0500
++++ b/src/basic/linux/if_arp.h	2026-06-21 15:23:39.857513773 -0400
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++#pragma once
++
++#if !defined(__GLIBC__)
++#include <netinet/if_ether.h>
++#include <net/if_arp.h>
++#endif
++
++#if defined(_NET_IF_ARP_H)
++#define arpreq __kernel_arpreq
++#define arpreq_old __kernel_arpreq_old
++#define arphdr __kernel_arphdr
++#endif
++
++#include_next <linux/if_arp.h>
++
++#if defined(_NET_IF_ARP_H)
++#undef arpreq
++#undef arpreq_old
++#undef arphdr
++#endif
+diff -Naur a/src/basic/linux/if_ether.h b/src/basic/linux/if_ether.h
+--- a/src/basic/linux/if_ether.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/linux/if_ether.h	2026-06-21 15:35:57.883988767 -0400
+@@ -22,6 +22,42 @@
+ #ifndef _UAPI_LINUX_IF_ETHER_H
+ #define _UAPI_LINUX_IF_ETHER_H
+ 
++#if !defined(__GLIBC__)
++#ifdef arpreq
++#define _SAVE_ARPREQ arpreq
++#undef arpreq
++#endif
++#ifdef arpreq_old
++#define _SAVE_ARPREQ_OLD arpreq_old
++#undef arpreq_old
++#endif
++#ifdef arphdr
++#define _SAVE_ARPHDR arphdr
++#undef arphdr
++#endif
++
++#include <netinet/if_ether.h>
++
++#ifdef _SAVE_ARPREQ
++#define arpreq _SAVE_ARPREQ
++#undef _SAVE_ARPREQ
++#endif
++#ifdef _SAVE_ARPREQ_OLD
++#define arpreq_old _SAVE_ARPREQ_OLD
++#undef _SAVE_ARPREQ_OLD
++#endif
++#ifdef _SAVE_ARPHDR
++#define arphdr _SAVE_ARPHDR
++#undef _SAVE_ARPHDR
++#endif
++#endif
++
++#if defined(_NETINET_IF_ETHER_H) || defined(_NET_ETHERNET_H)
++#define __UAPI_DEF_ETHHDR 0
++#else
++#define ethhdr __kernel_ethhdr
++#endif
++
+ #include <linux/types.h>
+ 
+ /*
+@@ -179,3 +215,6 @@
+ 
+ 
+ #endif /* _UAPI_LINUX_IF_ETHER_H */
++#ifdef ethhdr
++#undef ethhdr
++#endif
+diff -Naur a/src/basic/linux/in6.h b/src/basic/linux/in6.h
+--- a/src/basic/linux/in6.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/linux/in6.h	2026-06-21 15:37:34.382964171 -0400
+@@ -22,6 +22,10 @@
+ #ifndef _UAPI_LINUX_IN6_H
+ #define _UAPI_LINUX_IN6_H
+ 
++#if !defined(__GLIBC__)
++#include <netinet/in.h>
++#endif
++
+ #include <linux/types.h>
+ #include <linux/libc-compat.h>
+ 
+diff -Naur a/src/basic/linux/in.h b/src/basic/linux/in.h
+--- a/src/basic/linux/in.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/linux/in.h	2026-06-21 15:37:35.693977422 -0400
+@@ -19,6 +19,10 @@
+ #ifndef _UAPI_LINUX_IN_H
+ #define _UAPI_LINUX_IN_H
+ 
++#if !defined(__GLIBC__)
++#include <netinet/in.h>
++#endif
++
+ #include <linux/types.h>
+ #include <linux/stddef.h>
+ #include <linux/libc-compat.h>
+diff -Naur a/src/basic/linux/libc-compat.h b/src/basic/linux/libc-compat.h
+--- a/src/basic/linux/libc-compat.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/linux/libc-compat.h	2026-06-21 15:33:50.635702119 -0400
+@@ -49,6 +49,33 @@
+ #ifndef _UAPI_LIBC_COMPAT_H
+ #define _UAPI_LIBC_COMPAT_H
+ 
++#if !defined(__GLIBC__)
++#if defined(_NETINET_IN_H)
++#define __UAPI_DEF_IN_ADDR		0
++#define __UAPI_DEF_IN_IPPROTO		0
++#define __UAPI_DEF_IN_PKTINFO		0
++#define __UAPI_DEF_IP_MREQ		0
++#define __UAPI_DEF_SOCKADDR_IN		0
++#define __UAPI_DEF_IN_CLASS		0
++#define __UAPI_DEF_IN6_ADDR		0
++#define __UAPI_DEF_IN6_ADDR_ALT		0
++#define __UAPI_DEF_SOCKADDR_IN6		0
++#define __UAPI_DEF_IPV6_MREQ		0
++#define __UAPI_DEF_IPPROTO_V6		0
++#define __UAPI_DEF_IPV6_OPTIONS		0
++#define __UAPI_DEF_IN6_PKTINFO		0
++#define __UAPI_DEF_IP6_MTUINFO		0
++#endif
++#if defined(_NET_IF_H)
++#define __UAPI_DEF_IF_IFCONF 0
++#define __UAPI_DEF_IF_IFMAP 0
++#define __UAPI_DEF_IF_IFNAMSIZ 0
++#define __UAPI_DEF_IF_IFREQ 0
++#define __UAPI_DEF_IF_NET_DEVICE_FLAGS 0
++#define __UAPI_DEF_IF_NET_DEVICE_FLAGS_LOWER_UP_DORMANT_ECHO 0
++#endif
++#endif
++
+ /* We have included glibc headers... */
+ #if defined(__GLIBC__)
+ 
+diff -Naur a/src/basic/lock-util.h b/src/basic/lock-util.h
+--- a/src/basic/lock-util.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/lock-util.h	2026-06-21 15:18:29.633354630 -0400
+@@ -2,6 +2,7 @@
+ #pragma once
+ 
+ #include <fcntl.h>
++#include <sys/file.h>
+ 
+ typedef struct LockFile {
+         int dir_fd;
+diff -Naur a/src/basic/macro.h b/src/basic/macro.h
+--- a/src/basic/macro.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/macro.h	2026-06-21 15:40:20.859234512 -0400
+@@ -8,6 +8,41 @@
+ #include <sys/param.h>
+ #include <sys/sysmacros.h>
+ #include <sys/types.h>
++#include <string.h>
++
++#if !defined(__GLIBC__)
++#include <stdio.h>
++#include <time.h>
++
++#ifndef strptime_l
++#define strptime_l(s, fmt, tm, loc) strptime(s, fmt, tm)
++#endif
++
++#undef basename
++static inline char *safe_basename(const char *path) {
++        if (!path)
++                return NULL;
++        const char *p = strrchr(path, '/');
++        return (char *)(p ? p + 1 : path);
++}
++#define basename(path) safe_basename(path)
++
++static inline int malloc_trim(size_t pad) {
++        return 0;
++}
++
++static inline int malloc_info(int options, FILE *stream) {
++        errno = EOPNOTSUPP;
++        return -1;
++}
++
++#ifndef _PATH_UTMPX
++#define _PATH_UTMPX "/var/run/utmp"
++#endif
++#ifndef _PATH_WTMPX
++#define _PATH_WTMPX "/var/log/wtmp"
++#endif
++#endif
+ 
+ #include "constants.h"
+ #include "macro-fundamental.h"
+diff -Naur a/src/basic/missing_prctl.h b/src/basic/missing_prctl.h
+--- a/src/basic/missing_prctl.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/missing_prctl.h	2026-06-21 11:44:57.173350884 -0400
+@@ -1,7 +1,9 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ #pragma once
+ 
++#define prctl_mm_map __kernel_prctl_mm_map
+ #include <linux/prctl.h>
++#undef prctl_mm_map
+ 
+ /* 58319057b7847667f0c9585b9de0e8932b0fdb08 (4.3) */
+ #ifndef PR_CAP_AMBIENT
+diff -Naur a/src/basic/socket-util.c b/src/basic/socket-util.c
+--- a/src/basic/socket-util.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/socket-util.c	2026-06-21 12:01:26.389528196 -0400
+@@ -35,7 +35,7 @@
+ #include "user-util.h"
+ #include "utf8.h"
+ 
+-#if ENABLE_IDN
++#if ENABLE_IDN && defined(NI_IDN)
+ #  define IDN_FLAGS NI_IDN
+ #else
+ #  define IDN_FLAGS 0
+diff -Naur a/src/basic/sort-util.h b/src/basic/sort-util.h
+--- a/src/basic/sort-util.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/basic/sort-util.h	2026-06-21 11:28:55.118456213 -0400
+@@ -3,6 +3,11 @@
+ 
+ #include <stdlib.h>
+ 
++#ifndef __comparison_fn_t_defined
++typedef int (*comparison_fn_t)(const void *, const void *);
++#define __comparison_fn_t_defined 1
++#endif
++
+ #include "macro.h"
+ 
+ /* This is the same as glibc's internal __compar_d_fn_t type. glibc exports a public comparison_fn_t, for the
+diff -Naur a/src/shared/user-record-nss.c b/src/shared/user-record-nss.c
+--- a/src/shared/user-record-nss.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/shared/user-record-nss.c	2026-06-21 15:26:05.865995832 -0400
+@@ -380,6 +380,7 @@
+ }
+ 
+ int nss_sgrp_for_group(const struct group *grp, struct sgrp *ret_sgrp, char **ret_buffer) {
++#if ENABLE_GSHADOW
+         size_t buflen = 4096;
+         int r;
+ 
+@@ -415,6 +416,9 @@
+                 buflen *= 2;
+                 buf = mfree(buf);
+         }
++#else
++        return -EOPNOTSUPP;
++#endif
+ }
+ 
+ int nss_group_record_by_name(
+diff -Naur a/src/shared/user-record-nss.h b/src/shared/user-record-nss.h
+--- a/src/shared/user-record-nss.h	2023-12-06 15:32:40.000000000 -0500
++++ b/src/shared/user-record-nss.h	2026-06-21 15:26:02.852965271 -0400
+@@ -2,7 +2,16 @@
+ #pragma once
+ 
+ #include <grp.h>
++#if ENABLE_GSHADOW
+ #include <gshadow.h>
++#else
++struct sgrp {
++        char *sg_namp;
++        char *sg_passwd;
++        char **sg_adm;
++        char **sg_mem;
++};
++#endif
+ #include <pwd.h>
+ #include <shadow.h>
+ 
+diff -Naur a/src/test/test-cpu-set-util.c b/src/test/test-cpu-set-util.c
+--- a/src/test/test-cpu-set-util.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/test/test-cpu-set-util.c	2026-06-21 21:40:12.812521528 -0400
+@@ -6,6 +6,10 @@
+ #include "tests.h"
+ #include "macro.h"
+ 
++#ifndef __GLIBC__
++typedef unsigned long __cpu_mask;
++#endif
++
+ TEST(parse_cpu_set) {
+         CPUSet c = {};
+         _cleanup_free_ char *str = NULL;
+diff -Naur a/src/test/test-glob-util.c b/src/test/test-glob-util.c
+--- a/src/test/test-glob-util.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/test/test-glob-util.c	2026-06-21 21:49:44.796234426 -0400
+@@ -52,6 +52,7 @@
+         assert_se(r == 0);
+ }
+ 
++#if GLOB_ALTDIRFUNC
+ static void closedir_wrapper(void* v) {
+         (void) closedir(v);
+ }
+@@ -82,6 +83,7 @@
+ 
+         (void) rm_rf(template, REMOVE_ROOT|REMOVE_PHYSICAL);
+ }
++#endif
+ 
+ TEST(safe_glob) {
+         char template[] = "/tmp/test-glob-util.XXXXXXX";
+diff -Naur a/src/test/test-recurse-dir.c b/src/test/test-recurse-dir.c
+--- a/src/test/test-recurse-dir.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/test/test-recurse-dir.c	2026-06-21 21:53:26.444118297 -0400
+@@ -2,6 +2,10 @@
+ 
+ #include <ftw.h>
+ 
++#ifndef FTW_CONTINUE
++#define FTW_CONTINUE 0
++#endif
++
+ #include "fd-util.h"
+ #include "log.h"
+ #include "missing_magic.h"
+diff -Naur a/src/test/test-utmp.c b/src/test/test-utmp.c
+--- a/src/test/test-utmp.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/test/test-utmp.c	2026-06-21 21:38:04.322390563 -0400
+@@ -10,6 +10,10 @@
+ #ifndef UT_LINESIZE
+ #  define UT_LINESIZE      32
+ #endif
++
++#ifndef ACCOUNTING
++#  define ACCOUNTING 9
++#endif
+ #ifndef UT_NAMESIZE
+ #  define UT_NAMESIZE      32
+ #endif
+diff -Naur a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
+--- a/src/tmpfiles/tmpfiles.c	2023-12-06 15:32:40.000000000 -0500
++++ b/src/tmpfiles/tmpfiles.c	2026-06-21 15:44:18.550031992 -0400
+@@ -2433,9 +2433,10 @@
+ }
+ 
+ static int glob_item(Context *c, Item *i, action_t action) {
+-        _cleanup_globfree_ glob_t g = {
+-                .gl_opendir = (void *(*)(const char *)) opendir_nomod,
+-        };
++        _cleanup_globfree_ glob_t g = {};
++#if GLOB_ALTDIRFUNC
++        g.gl_opendir = (void *(*)(const char *)) opendir_nomod;
++#endif
+         int r = 0, k;
+ 
+         assert(c);
+@@ -2460,9 +2461,10 @@
+                 Item *i,
+                 fdaction_t action) {
+ 
+-        _cleanup_globfree_ glob_t g = {
+-                .gl_opendir = (void *(*)(const char *)) opendir_nomod,
+-        };
++        _cleanup_globfree_ glob_t g = {};
++#if GLOB_ALTDIRFUNC
++        g.gl_opendir = (void *(*)(const char *)) opendir_nomod;
++#endif
+         int r = 0, k;
+ 
+         k = safe_glob(i->path, GLOB_NOSORT|GLOB_BRACE, &g);

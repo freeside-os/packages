@@ -1,0 +1,19 @@
+[package]
+name = "dbus-broker"
+version = "37"
+description = "Linux D-Bus Message Broker - high-performance drop-in replacement"
+dependencies = ["musl", "systemd"]
+group = "system"
+
+[[sources]]
+url = "https://github.com/bus1/dbus-broker/releases/download/v37/dbus-broker-37.tar.xz"
+checksum = { algorithm = "sha256", value = "f819a8db8795fa08c767612e3823fd594694a0990f2543ecf35d6a1a6bf2ab5b" }
+
+[build]
+dependencies = [
+    "llvm",
+    "meson",
+    "ninja",
+    "pkgconf",
+    "systemd"
+]

@@ -1,4 +1,4 @@
-# util-linux package build recipe
+# dbus-broker package build recipe
 
 # Prepare: Unpack source structures and apply local patches
 prepare:
@@ -12,15 +12,19 @@ prepare:
 
 # Build: Compile source trees within the LLVM compiler configuration context
 build: prepare
-    ./configure $CONFIGURE_ARGS
-    make -j$(nproc)
+    meson setup builddir \
+        --prefix=/usr \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        -Dlauncher=true \
+        -Daudit=false
+    ninja -C builddir
 
 # Package: Mirror target files securely inside the un-merged /usr tree under DESTDIR
 package destdir=env_var("DESTDIR"):
-    make DESTDIR="{{destdir}}" install
+    DESTDIR={{destdir}} ninja -C builddir install
     # Enforce Un-Merged /usr compliance post-install
     if [ -d {{destdir}}/bin ]; then mv {{destdir}}/bin/* {{destdir}}/usr/bin/ && rmdir {{destdir}}/bin; fi
-    if [ -d {{destdir}}/sbin ]; then mv {{destdir}}/sbin/* {{destdir}}/usr/bin/ && rmdir {{destdir}}/sbin; fi
     if [ -d {{destdir}}/lib ]; then mv {{destdir}}/lib/* {{destdir}}/usr/lib/ && rmdir {{destdir}}/lib; fi
     # Enforce strict standard permissions
     find "{{destdir}}" -type d -exec chmod 755 {} +

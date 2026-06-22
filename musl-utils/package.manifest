@@ -1,0 +1,29 @@
+[package]
+name = "musl-utils"
+version = "1.2.5"
+description = "Essential utilities associated with the musl C library"
+dependencies = ["musl"]
+group = "system"
+
+[[sources]]
+file = "getconf.c"
+checksum = { algorithm = "sha256", value = "84efe4442879fc3e00db2b4b6ff871b85ce3825b7940f7ac2ab0affee04eaf31" }
+
+[[sources]]
+file = "getent.c"
+checksum = { algorithm = "sha256", value = "87edefb5c7fe287b029029194d50cb56e5b8616ffac1ae4ebd269a9aa6fdcce8" }
+
+[[sources]]
+file = "iconv.c"
+checksum = { algorithm = "sha256", value = "f79a2930a2e5bb0624321589edf8b889d1e9b603e01e6b7ae214616605b3fdd7" }
+
+[[sources]]
+file = "ldconfig.c"
+checksum = { algorithm = "sha256", value = "bed58c3270e7a5e1443697d65704ae6b42fe3a94c0cdc0a97d6db2769ad7138e" }
+
+[[sources]]
+file = "ldd"
+checksum = { algorithm = "sha256", value = "6a7c601fc1766d952f477d13bd9d9dfd481c898d358f3d7120cda6afdd8878c6" }
+
+[build]
+dependencies = ["musl", "llvm"]

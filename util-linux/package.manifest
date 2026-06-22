@@ -10,7 +10,8 @@ url = "https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/v2.40/util-lin
 checksum = { algorithm = "sha256", value = "59e676aa53ccb44b6c39f0ffe01a8fa274891c91bef1474752fad92461def24f" }
 
 [build]
+dependencies = ["musl"]
 
 [build.environment]
-CONFIGURE_ARGS = "--prefix=/usr --disable-static --disable-bash-completion --disable-use-tty-group --disable-makeinstall-chown --disable-makeinstall-setuid --disable-liblastlog2"
-dependencies = ["musl"]
+CONFIGURE_ARGS = "--prefix=/usr --disable-static --disable-bash-completion --disable-use-tty-group --disable-makeinstall-chown --disable-makeinstall-setuid --disable-liblastlog2 --sbindir=/usr/bin --libdir=/usr/lib --sysconfdir=/etc --localstatedir=/var"
+LDFLAGS = "-Wl,--undefined-version"

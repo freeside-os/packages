@@ -123,6 +123,21 @@ def load_all_manifests(packages_dir):
         manifests[entry] = load_manifest(manifest_path)
     return manifests
 
+def load_all_manifests_safe(packages_dir):
+    """Loads all package manifests, ignoring files that fail to parse."""
+    manifests = {}
+    if not os.path.isdir(packages_dir):
+        return manifests
+    for entry in sorted(os.listdir(packages_dir)):
+        manifest_path = os.path.join(packages_dir, entry, "package.manifest")
+        if not os.path.isfile(manifest_path):
+            continue
+        try:
+            manifests[entry] = load_manifest(manifest_path)
+        except Exception:
+            pass
+    return manifests
+
 # ==============================================================================
 # Commands: RESOLVE
 # ==============================================================================
@@ -296,7 +311,8 @@ def handle_list(args):
                 print(f"Error: Group '{target_group}' not found", file=sys.stderr)
                 sys.exit(1)
             for pkg in sorted(groups[target_group]):
-                print(pkg)
+                version = manifests[pkg].package.version
+                print(f"{pkg:<25} ({version})")
         elif args.groups:
             for group in sorted(groups.keys()):
                 print(group)
@@ -304,10 +320,289 @@ def handle_list(args):
             for group in sorted(groups.keys()):
                 print(f"{group}:")
                 for pkg in sorted(groups[group]):
-                    print(f"  {pkg}")
+                    version = manifests[pkg].package.version
+                    print(f"  {pkg:<25} ({version})")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
+# ==============================================================================
+# Commands: VERIFY
+# ==============================================================================
+
+def check_dependency_cycle(pkg_name: str, manifests: dict) -> Optional[str]:
+    """Checks if there is a dependency cycle starting from pkg_name."""
+    if pkg_name not in manifests:
+        return None
+    
+    visited = {}  # name -> state: 0=unvisited, 1=visiting, 2=visited
+    path = []
+    
+    def dfs(name):
+        if name not in manifests:
+            return None
+        visited[name] = 1
+        path.append(name)
+        
+        data = manifests[name]
+        # Safely extract dependencies, ensuring they are lists and elements are strings
+        deps = []
+        if hasattr(data, 'package') and data.package:
+            pkg_deps = getattr(data.package, 'dependencies', [])
+            if isinstance(pkg_deps, list):
+                for d in pkg_deps:
+                    if isinstance(d, str):
+                        deps.append(d)
+            elif isinstance(pkg_deps, str):
+                deps.append(pkg_deps)
+                
+        if hasattr(data, 'build') and data.build:
+            build_deps = getattr(data.build, 'dependencies', [])
+            if isinstance(build_deps, list):
+                for d in build_deps:
+                    if isinstance(d, str):
+                        deps.append(d)
+            elif isinstance(build_deps, str):
+                deps.append(build_deps)
+                
+        for dep in sorted(set(deps)):
+            if visited.get(dep) == 1:
+                cycle_path = path[path.index(dep):] + [dep]
+                return " -> ".join(cycle_path)
+            elif visited.get(dep) != 2:
+                cycle_str = dfs(dep)
+                if cycle_str:
+                    return cycle_str
+                    
+        path.pop()
+        visited[name] = 2
+        return None
+        
+    return dfs(pkg_name)
+
+def verify_package(pkg_name: str, all_pkg_dirs: set, manifests: dict, packages_dir: str) -> List[str]:
+    """Validates a package directory structure and manifests, returning a list of error strings."""
+    errors = []
+    pkg_dir = os.path.join(packages_dir, pkg_name)
+    
+    # 1. Structural Checks
+    if not os.path.isdir(pkg_dir):
+        return [f"Package directory '{pkg_dir}' does not exist."]
+        
+    manifest_path = os.path.join(pkg_dir, "package.manifest")
+    justfile_path = os.path.join(pkg_dir, "package.justfile")
+    
+    if not os.path.isfile(manifest_path):
+        errors.append("package.manifest is missing.")
+    if not os.path.isfile(justfile_path):
+        errors.append("package.justfile is missing.")
+        
+    if not os.path.isfile(manifest_path):
+        return errors
+
+    # 2. TOML Parsing & Schema Validation
+    data = None
+    try:
+        with open(manifest_path, "rb") as f:
+            data = tomllib.load(f)
+    except Exception as e:
+        errors.append(f"package.manifest is not valid TOML: {e}")
+        return errors
+
+    # Check for compiler/linker flags misplaced in root
+    misplaced_keys = ["CFLAGS", "CXXFLAGS", "LDFLAGS", "CONFIGURE_ARGS", "MAKE_FLAGS"]
+    for key in misplaced_keys:
+        if key in data:
+            errors.append(f"Build environment variable '{key}' must be placed under [build.environment] or [build.env], not in the root table.")
+    
+    pkg_data = data.get("package")
+    if pkg_data is None:
+        errors.append("Missing [package] table.")
+    elif not isinstance(pkg_data, dict):
+        errors.append("[package] must be a table.")
+    else:
+        name = pkg_data.get("name")
+        if not name:
+            errors.append("[package].name is missing or empty.")
+        elif not isinstance(name, str):
+            errors.append("[package].name must be a string.")
+        elif name != pkg_name:
+            errors.append(f"[package].name '{name}' does not match the directory name '{pkg_name}'.")
+            
+        version = pkg_data.get("version")
+        if version is None or str(version).strip() == "":
+            errors.append("[package].version is missing or empty.")
+            
+        if "description" not in pkg_data:
+            errors.append("[package].description is missing.")
+        elif not isinstance(pkg_data.get("description"), str):
+            errors.append("[package].description must be a string.")
+            
+        group = pkg_data.get("group")
+        valid_groups = {"base", "builder", "system", "server", "desktop", "extra"}
+        if group is None:
+            errors.append("[package].group is missing.")
+        elif not isinstance(group, str):
+            errors.append("[package].group must be a string.")
+        elif group not in valid_groups:
+            errors.append(f"[package].group '{group}' is invalid. Allowed groups are: {', '.join(sorted(valid_groups))}")
+            
+        deps = pkg_data.get("dependencies")
+        if deps is not None:
+            if not isinstance(deps, list):
+                errors.append("[package].dependencies must be a list of strings.")
+            else:
+                for dep in deps:
+                    if not isinstance(dep, str):
+                        errors.append(f"Dependency '{dep}' in [package].dependencies must be a string.")
+                    elif dep not in all_pkg_dirs:
+                        errors.append(f"Runtime dependency '{dep}' does not exist under '{packages_dir}'.")
+                        
+    if isinstance(pkg_data, dict):
+        for key in misplaced_keys:
+            if key in pkg_data:
+                errors.append(f"Build environment variable '{key}' must be placed under [build.environment] or [build.env], not in [package] table.")
+
+    build_data = data.get("build")
+    if build_data is not None:
+        if not isinstance(build_data, dict):
+            errors.append("[build] must be a table.")
+        else:
+            build_deps = build_data.get("dependencies")
+            if build_deps is not None:
+                if not isinstance(build_deps, list):
+                    errors.append("[build].dependencies must be a list of strings.")
+                else:
+                    for dep in build_deps:
+                        if not isinstance(dep, str):
+                            errors.append(f"Dependency '{dep}' in [build].dependencies must be a string.")
+                        elif dep not in all_pkg_dirs:
+                            errors.append(f"Build dependency '{dep}' does not exist under '{packages_dir}'.")
+            
+            for key in misplaced_keys:
+                if key in build_data:
+                    errors.append(f"Build environment variable '{key}' must be placed under [build.environment] or [build.env], not in [build] table.")
+
+    # 3. Sources Check
+    sources = data.get("sources")
+    if sources is not None:
+        if not isinstance(sources, list):
+            errors.append("'sources' must be an array of tables.")
+        else:
+            for idx, src in enumerate(sources):
+                if not isinstance(src, dict):
+                    errors.append(f"Source at index {idx} must be a table.")
+                    continue
+                
+                keys = [k for k in ["url", "file", "git"] if k in src]
+                if len(keys) != 1:
+                    errors.append(f"Source at index {idx} must specify exactly one of 'url', 'file', or 'git' (found: {', '.join(keys) if keys else 'none'}).")
+                    continue
+                
+                src_type = keys[0]
+                if src_type in ["url", "file"]:
+                    checksum = src.get("checksum")
+                    if checksum is None:
+                        errors.append(f"Source at index {idx} ({src_type}) is missing a 'checksum' table.")
+                    elif not isinstance(checksum, dict):
+                        errors.append(f"Source at index {idx} has invalid 'checksum' (must be a table).")
+                    else:
+                        algo = checksum.get("algorithm")
+                        val = checksum.get("value")
+                        if algo != "sha256":
+                            errors.append(f"Source at index {idx} has invalid checksum algorithm '{algo}' (only 'sha256' is supported).")
+                        if not val:
+                            errors.append(f"Source at index {idx} has missing or empty checksum value.")
+                        elif not (isinstance(val, str) and len(val) == 64 and all(c in "0123456789abcdefABCDEF" for c in val)):
+                            errors.append(f"Source at index {idx} has invalid SHA256 checksum value format.")
+                    
+                    if src_type == "file":
+                        filename = src.get("file")
+                        if isinstance(filename, str):
+                            local_file_path = os.path.join(pkg_dir, filename)
+                            if not os.path.isfile(local_file_path):
+                                errors.append(f"Local file source '{filename}' does not exist at '{local_file_path}'.")
+                
+                elif src_type == "git":
+                    if "checksum" in src:
+                        errors.append(f"Source at index {idx} (git) should not have a 'checksum' table.")
+                    ref = src.get("ref")
+                    if ref is not None and not isinstance(ref, str):
+                        errors.append(f"Source at index {idx} (git) has invalid 'ref' (must be a string).")
+
+    # 4. Justfile Check
+    if os.path.isfile(justfile_path):
+        try:
+            with open(justfile_path, "r", encoding="utf-8") as f:
+                just_content = f.read()
+            
+            build_match = re.search(r"^build\b[^:]*:", just_content, re.MULTILINE)
+            package_match = re.search(r"^package\b[^:]*:", just_content, re.MULTILINE)
+            
+            if not build_match:
+                errors.append("package.justfile is missing the 'build' target.")
+            if not package_match:
+                errors.append("package.justfile is missing the 'package' target.")
+        except Exception as e:
+            errors.append(f"Failed to read package.justfile: {e}")
+
+    # 5. Dependency Cycle Check
+    cycle_str = check_dependency_cycle(pkg_name, manifests)
+    if cycle_str:
+        errors.append(f"Dependency cycle detected: {cycle_str}")
+
+    return errors
+
+def handle_verify(args):
+    """CLI handler to verify package(s) validity."""
+    packages_dir = get_packages_dir()
+    
+    if args.pkgname and args.all:
+        print("Error: Cannot specify both a package name and --all", file=sys.stderr)
+        sys.exit(1)
+    if not args.pkgname and not args.all:
+        print("Error: Specify either a package name or --all", file=sys.stderr)
+        sys.exit(1)
+        
+    if args.all:
+        pkg_names = []
+        if os.path.isdir(packages_dir):
+            for entry in sorted(os.listdir(packages_dir)):
+                if os.path.isdir(os.path.join(packages_dir, entry)) and not entry.startswith("."):
+                    pkg_names.append(entry)
+        if not pkg_names:
+            print("No packages found to verify.", file=sys.stderr)
+            sys.exit(0)
+    else:
+        pkg_names = [args.pkgname]
+        
+    manifests = load_all_manifests_safe(packages_dir)
+    
+    all_pkg_dirs = set()
+    if os.path.isdir(packages_dir):
+        for entry in os.listdir(packages_dir):
+            if os.path.isdir(os.path.join(packages_dir, entry)) and not entry.startswith("."):
+                all_pkg_dirs.add(entry)
+                
+    invalid_packages = 0
+    total_packages = len(pkg_names)
+    
+    for pkg_name in pkg_names:
+        errors = verify_package(pkg_name, all_pkg_dirs, manifests, packages_dir)
+        if errors:
+            invalid_packages += 1
+            print(f"✗ [{pkg_name}] Package is invalid:")
+            for err in errors:
+                print(f"  - {err}")
+        else:
+            print(f"✓ [{pkg_name}] Package is valid.")
+            
+    if invalid_packages > 0:
+        print(f"\nVerification failed: {invalid_packages}/{total_packages} package(s) are invalid.", file=sys.stderr)
+        sys.exit(1)
+    else:
+        print(f"\nVerification successful: {total_packages}/{total_packages} package(s) are valid.")
+        sys.exit(0)
 
 # ==============================================================================
 # Commands: CONVERT
@@ -505,6 +800,23 @@ def install_package(tarball_path, prefix=""):
     """Installs a compiled package tarball into the container root /."""
     print(f"{prefix}Installing {os.path.basename(tarball_path)}")
     subprocess.run(["tar", "-xzf", tarball_path, "--exclude=meta/*", "-C", "/"], check=True)
+    
+    # Enforce UsrMerge inside the sandbox container
+    usr_sbin = "/usr/sbin"
+    if os.path.exists(usr_sbin) and not os.path.islink(usr_sbin):
+        usr_bin = "/usr/bin"
+        for name in os.listdir(usr_sbin):
+            src = os.path.join(usr_sbin, name)
+            dst = os.path.join(usr_bin, name)
+            if os.path.exists(dst):
+                if os.path.islink(dst) or os.path.isfile(dst):
+                    os.remove(dst)
+                else:
+                    shutil.rmtree(dst)
+            shutil.move(src, dst)
+        shutil.rmtree(usr_sbin)
+        os.symlink("bin", usr_sbin)
+
 
 def fetch_source_url(url, dest_dir, checksum_algo=None, checksum_val=None, prefix=""):
     """Downloads source from a URL and verifies checksum."""
@@ -521,7 +833,7 @@ def fetch_source_url(url, dest_dir, checksum_algo=None, checksum_val=None, prefi
             raise Exception(f"Integrity check failed for {filename}! Expected SHA256: {checksum_val}, Got: {actual}")
         print(f"{prefix}  Checksum OK: {filename}")
 
-def build_package_impl(pkg_name, keep_all_logs=False, current_idx=1, total_count=1):
+def build_package_impl(pkg_name, keep_all_logs=False, keep_sandbox=False, current_idx=1, total_count=1):
     """Builds and packages a single package inside the container."""
     progress = f"[{current_idx}/{total_count}]"
     pkg_name_fmt = f"[{pkg_name}]"
@@ -555,7 +867,7 @@ def build_package_impl(pkg_name, keep_all_logs=False, current_idx=1, total_count
     src_dir = f"{ws}/src"
     dest_dir = f"{ws}/dest"
     
-    if os.path.exists(ws):
+    if os.path.exists(ws) and not keep_sandbox:
         shutil.rmtree(ws)
     os.makedirs(src_dir, exist_ok=True)
     os.makedirs(dest_dir, exist_ok=True)
@@ -655,7 +967,8 @@ def build_package_impl(pkg_name, keep_all_logs=False, current_idx=1, total_count
 
     install_package(tarball_path, prefix)
 
-    shutil.rmtree(ws)
+    if not keep_sandbox:
+        shutil.rmtree(ws)
     print(f"{prefix}Compiling... done")
     return True
 
@@ -677,10 +990,10 @@ def handle_build(args):
                 print(f"Found {len(ordered_packages)} packages to build: {ordered_packages}")
                 total = len(ordered_packages)
                 for idx, pkg in enumerate(ordered_packages, 1):
-                    build_package_impl(pkg, keep_all_logs=args.keep_all_logs, current_idx=idx, total_count=total)
+                    build_package_impl(pkg, keep_all_logs=args.keep_all_logs, keep_sandbox=args.keep_sandbox, current_idx=idx, total_count=total)
                 print(f"\nBuild Complete for: {args.pkg} and dependencies ✓")
             else:
-                build_package_impl(args.pkg, keep_all_logs=args.keep_all_logs, current_idx=1, total_count=1)
+                build_package_impl(args.pkg, keep_all_logs=args.keep_all_logs, keep_sandbox=args.keep_sandbox, current_idx=1, total_count=1)
         except Exception as e:
             print(f"Build Failed: {e}", file=sys.stderr)
             sys.exit(1)
@@ -691,7 +1004,7 @@ def handle_build(args):
             print(f"Found {len(ordered_packages)} packages in group: {ordered_packages}")
             total = len(ordered_packages)
             for idx, pkg in enumerate(ordered_packages, 1):
-                build_package_impl(pkg, keep_all_logs=args.keep_all_logs, current_idx=idx, total_count=total)
+                build_package_impl(pkg, keep_all_logs=args.keep_all_logs, keep_sandbox=args.keep_sandbox, current_idx=idx, total_count=total)
             print(f"\nGroup Build Complete for: {args.group} ✓")
         except Exception as e:
             print(f"Group Build Failed: {e}", file=sys.stderr)
@@ -856,6 +1169,7 @@ def main():
     build_group.add_argument("--group", help="Build a package group")
     build_parser.add_argument("--with-deps", action="store_true", help="Build package dependencies too")
     build_parser.add_argument("--keep-all-logs", action="store_true", help="Keep build log files even on success")
+    build_parser.add_argument("--keep-sandbox", action="store_true", help="Keep the build sandbox and workspace directories")
 
     # Info Command
     info_parser = subparsers.add_parser("info", help="Get metadata info for a package")
@@ -875,6 +1189,11 @@ def main():
     list_group.add_argument("--group", help="List all packages in a given group")
     list_group.add_argument("--groups", action="store_true", help="List only the names of the groups")
 
+    # Verify Command
+    verify_parser = subparsers.add_parser("verify", help="Verify package validity")
+    verify_parser.add_argument("pkgname", nargs="?", help="Name of the package to verify")
+    verify_parser.add_argument("--all", action="store_true", help="Verify all packages in the repository")
+
     args = parser.parse_args()
 
     if args.command == "resolve":
@@ -889,6 +1208,8 @@ def main():
         handle_create(args)
     elif args.command == "list":
         handle_list(args)
+    elif args.command == "verify":
+        handle_verify(args)
 
 if __name__ == "__main__":
     main()
