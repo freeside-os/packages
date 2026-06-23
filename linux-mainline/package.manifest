@@ -1,0 +1,18 @@
+[package]
+name = "linux-mainline"
+version = "7.1.0"
+description = "Pristine Mainline Linux Kernel compiled with LLVM and stitched into an atomic UKI"
+group = "linux"
+dependencies = [
+]
+
+[build]
+dependencies = [
+    "llvm", "make", "perl", "python3", "bc", "elfutils",
+    "systemd",        # Provides systemd-ukify
+    "base-initramfs"  # Declared as build dependency to deliver the static initramfs-base.cpio
+]
+
+[[sources]]
+url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.1.tar.xz"
+checksum = { algorithm = "sha256", value = "691f44797fbe790dc8a321604c927087526ad27b6d649925d60f8eed0a2564a0" }

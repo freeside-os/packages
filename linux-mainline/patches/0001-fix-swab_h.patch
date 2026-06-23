@@ -1,0 +1,13 @@
+--- a/include/uapi/linux/swab.h
++++ b/include/uapi/linux/swab.h
+@@ -3,6 +3,10 @@
+ #define _UAPI_LINUX_SWAB_H
+ 
+ #include <linux/types.h>
++
++#ifndef __attribute_const__
++#define __attribute_const__ __attribute__((__const__))
++#endif
+ 
+ #ifdef __GNUC__
+ # define __SWAB_TYPE_in_struct__

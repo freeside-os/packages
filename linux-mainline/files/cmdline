@@ -1,0 +1,1 @@
+root=UUID=placeholder rw quiet systemd.volatile=overlay
