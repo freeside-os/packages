@@ -32,5 +32,6 @@ dependencies = [
     "python3",
     "python-markupsafe",
     "python-jinja2",
+    "python-pyelftools",
     "llvm"
 ]

@@ -1,0 +1,13 @@
+[package]
+name = "kmod"
+version = "34.2"
+description = "Linux kernel module management tools and library"
+group = "base"
+dependencies = ["musl", "zlib", "openssl", "xz", "zstd"]
+
+[build]
+dependencies = ["meson", "ninja", "musl", "zlib", "openssl", "xz", "zstd"]
+
+[[sources]]
+url = "https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-34.2.tar.xz"
+checksum = { algorithm = "sha256", value = "5a5d5073070cc7e0c7a7a3c6ec2a0e1780850c8b47b3e3892226b93ffcb9cb54" }

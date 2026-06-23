@@ -1,16 +1,16 @@
 [package]
 name = "python3"
-version = "3.12.3"
+version = "3.12.8"
 description = "Python Programming Language"
 dependencies = ["musl", "zlib", "openssl", "bzip2", "xz"]
 group = "base"
 
 [[sources]]
-url = "https://www.python.org/ftp/python/3.12.3/Python-3.12.3.tar.xz"
-checksum = { algorithm = "sha256", value = "56bfef1fdfc1221ce6720e43a661e3eb41785dd914ce99698d8c7896af4bdaa1" }
+url = "https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz"
+checksum = { algorithm = "sha256", value = "c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e" }
 
 [build]
 
 [build.environment]
-CONFIGURE_ARGS = "--prefix=/usr --enable-shared --with-ensurepip=yes --with-openssl=/usr ac_cv_header_libintl_h=no ac_cv_lib_intl_textdomain=no"
+CONFIGURE_ARGS = "--prefix=/usr --sbindir=/usr/bin --libdir=/usr/lib --enable-shared --with-ensurepip=yes --with-openssl=/usr ac_cv_header_libintl_h=no ac_cv_lib_intl_textdomain=no"
 dependencies = ["musl", "zlib", "openssl", "bzip2", "xz"]

@@ -1,0 +1,13 @@
+[package]
+name = "elfutils"
+version = "0.195"
+description = "Handle ELF object files and DWARF debugging information"
+group = "base"
+dependencies = ["musl", "zlib", "zstd", "xz", "bzip2", "musl-fts", "musl-obstack"]
+
+[build]
+dependencies = ["llvm", "make", "musl", "zlib", "zstd", "xz", "bzip2", "argp-standalone", "musl-fts", "musl-obstack"]
+
+[[sources]]
+url = "https://sourceware.org/elfutils/ftp/0.195/elfutils-0.195.tar.bz2"
+checksum = { algorithm = "sha256", value = "37629fdf7f1f3dc2818e138fca2b8094177d6c2d0f701d3bb650a561218dc026" }

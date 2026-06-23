@@ -42,6 +42,22 @@ This preserves `build/workspace/systemd-<version>` on the host, meaning you can 
 
 ---
 
+## Upgrade Notes
+
+The compilation of `systemd` v255 required several additions to the Meson build configuration to satisfy requirements for the EFI boot stub (`sbat`) and to work around Musl C library incompatibilities.
+
+- **SBAT Configuration:** The build system requires several `sbat` (UEFI Secure Boot Advanced Targeting) metadata variables to be explicitly set. These were added as Meson flags:
+  - `-Dsbat-distro="freeside"`
+  - `-Dsbat-distro-version="2024.06"`
+  - `-Dsbat-distro-summary="Freeside OS"`
+  - `-Dsbat-distro-url="https://freeside.dev"`
+
+- **EFI Disabled:** The EFI boot stub code has a hard dependency on a 2-byte `wchar_t`, which conflicts with Musl's 4-byte `wchar_t` definition. To resolve this compilation error, the EFI feature was disabled entirely using the Meson flag:
+  - `-Defi=false`
+
+These flags have been added to the `package.justfile` and should be reviewed during future version upgrades.
+
+
 ## Instructions for Future Updates
 
 When upgrading the `systemd` package to a new version, follow these steps to rebase the compatibility patches:

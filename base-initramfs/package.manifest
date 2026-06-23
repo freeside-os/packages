@@ -1,0 +1,19 @@
+[package]
+name = "base-initramfs"
+version = "1.0.0"
+description = "Stateless generic initramfs CPIO archive for Freeside early-boot"
+group = "linux"
+dependencies = [
+    "systemd", "cryptsetup", "btrfs-progs", "musl", "kmod"
+]
+
+[[sources]]
+file = "fsinitrd.py"
+checksum = {algorithm = "sha256", value="f0e0921c4599e5d283348323ef6f290d24b3e44b057fbbc17784faa981e93287"}
+
+[build]
+dependencies = [
+    "llvm", "make", "libarchive", "gzip", "findutils",
+    "musl", "systemd", "cryptsetup", "btrfs-progs", "util-linux", "kmod", "bash"
+]
+

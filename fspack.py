@@ -20,6 +20,17 @@ try:
 except AttributeError:
     pass
 
+VALID_GROUPS = {
+    "base", 
+    "builder", 
+    "system", 
+    "linux",
+    "server", 
+    "desktop", 
+    "extra"
+}
+
+
 # ==============================================================================
 # Typed Manifest Dataclasses
 # ==============================================================================
@@ -461,13 +472,12 @@ def verify_package(pkg_name: str, all_pkg_dirs: set, manifests: dict, packages_d
             errors.append("[package].description must be a string.")
             
         group = pkg_data.get("group")
-        valid_groups = {"base", "builder", "system", "server", "desktop", "extra"}
         if group is None:
             errors.append("[package].group is missing.")
         elif not isinstance(group, str):
             errors.append("[package].group must be a string.")
-        elif group not in valid_groups:
-            errors.append(f"[package].group '{group}' is invalid. Allowed groups are: {', '.join(sorted(valid_groups))}")
+        elif group not in VALID_GROUPS:
+            errors.append(f"[package].group '{group}' is invalid. Allowed groups are: {', '.join(sorted(VALID_GROUPS))}")
             
         deps = pkg_data.get("dependencies")
         if deps is not None:

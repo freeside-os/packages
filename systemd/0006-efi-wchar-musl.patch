@@ -1,0 +1,14 @@
+diff -Naur a/src/boot/efi/efi.h b/src/boot/efi/efi.h
+--- a/src/boot/efi/efi.h
++++ b/src/boot/efi/efi.h
+@@ -10,7 +10,10 @@
+ #include <stddef.h>
+ #include <stdint.h>
+ 
+-typedef __WCHAR_TYPE__ wchar_t;
++#ifndef __DEFINED_wchar_t
++typedef unsigned short wchar_t;
++#define __DEFINED_wchar_t
++#endif
+ 
+ #define STATUS_SUCCESS 0
