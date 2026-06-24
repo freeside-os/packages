@@ -2,7 +2,7 @@
 name = "musl-fts"
 version = "1.2.7"
 description = "Implementation of fts(3) for musl libc"
-group = "base"
+group = "linux"
 dependencies = ["musl"]
 
 [[sources]]

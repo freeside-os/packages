@@ -2,7 +2,7 @@
 name = "kmod"
 version = "34.2"
 description = "Linux kernel module management tools and library"
-group = "base"
+group = "system"
 dependencies = ["musl", "zlib", "openssl", "xz", "zstd"]
 
 [build]

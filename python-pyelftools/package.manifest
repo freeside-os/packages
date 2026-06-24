@@ -3,7 +3,7 @@ name = "python-pyelftools"
 version = "0.33"
 description = "Python library for analyzing ELF files and DWARF debugging information"
 dependencies = ["python3", "setuptools"]
-group = "builder"
+group = "linux"
 
 [[sources]]
 url = "https://github.com/eliben/pyelftools/archive/v0.33.tar.gz"

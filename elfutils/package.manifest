@@ -2,7 +2,7 @@
 name = "elfutils"
 version = "0.195"
 description = "Handle ELF object files and DWARF debugging information"
-group = "base"
+group = "linux"
 dependencies = ["musl", "zlib", "zstd", "xz", "bzip2", "musl-fts", "musl-obstack"]
 
 [build]

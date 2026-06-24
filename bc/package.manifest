@@ -2,7 +2,7 @@
 name = "bc"
 version = "1.08.2"
 description = "An arbitrary precision calculator language"
-group = "base"
+group = "linux"
 dependencies = ["readline", "musl"]
 
 [build]
