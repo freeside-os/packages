@@ -1,16 +1,14 @@
 [package]
 name = "linux-mainline"
 version = "7.1.0"
-description = "Pristine Mainline Linux Kernel compiled with LLVM and stitched into an atomic UKI"
+description = "Pristine Mainline Linux Kernel build tree output"
 group = "linux"
 dependencies = [
 ]
 
 [build]
 dependencies = [
-    "llvm", "make", "perl", "python3", "bc", "elfutils",
-    "systemd",        # Provides systemd-ukify
-    "base-initramfs"  # Declared as build dependency to deliver the static initramfs-base.cpio
+    "llvm", "make", "perl", "python3", "bc", "elfutils"
 ]
 
 [[sources]]

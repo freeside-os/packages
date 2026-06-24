@@ -23,34 +23,10 @@ build: prepare
     make -j$(nproc) ARCH=x86_64 {{llvm_flags}} modules
 
 package:
-    # 1. Map driver modules directly to un-merged /usr location
-    mkdir -p "{{destdir}}"/usr/lib/modules
-    make ARCH=x86_64 {{llvm_flags}} INSTALL_MOD_PATH="{{destdir}}"/usr modules_install
-    
-    # Strip debugging symbols and remove transient development symlinks
-    find "{{destdir}}"/usr/lib/modules/ -name "*.ko" -exec llvm-objcopy --strip-debug {} \;
-    rm -f "{{destdir}}"/usr/lib/modules/{{pkg_version}}/build || true
-    rm -f "{{destdir}}"/usr/lib/modules/{{pkg_version}}/source || true
-    rm -f "{{destdir}}"/usr/lib/modules/{{pkg_version}}-freeside/build || true
-    rm -f "{{destdir}}"/usr/lib/modules/{{pkg_version}}-freeside/source || true
+    # Copy the kernel build output/tree to the destination directory
+    mkdir -p "{{destdir}}"/usr/lib/freeside/linux/linux-mainline
+    cp -a . "{{destdir}}"/usr/lib/freeside/linux/linux-mainline
 
-    # 2. Stage boot command-line parameters
-    mkdir -p "{{destdir}}"/usr/lib/kernel
-    cp /workspace/packages/linux-mainline/files/cmdline "{{destdir}}"/usr/lib/kernel/cmdline
-
-    # 3. Assemble the Unified Kernel Image (UKI) PE executable using llvm-objcopy (letting it auto-assign VMAs)
-    llvm-objcopy \
-        --add-section .osrel=/etc/os-release \
-        --set-section-flags .osrel=alloc,readonly,code \
-        --add-section .cmdline="{{destdir}}"/usr/lib/kernel/cmdline \
-        --set-section-flags .cmdline=alloc,readonly,code \
-        --add-section .initrd=/usr/lib/freeside/initramfs.cpio \
-        --set-section-flags .initrd=alloc,readonly,code \
-        --add-section .linux=arch/x86/boot/bzImage \
-        --set-section-flags .linux=alloc,readonly,code \
-        /usr/lib/systemd/boot/efi/linuxx64.efi.stub \
-        "{{destdir}}"/usr/lib/kernel/uki-{{pkg_version}}.efi
-
-    # 4. Strict permissions: Enforce chmod 755 on directories and binaries at the end of the package step
+    # Strict permissions: Enforce chmod 755 on directories and binaries at the end of the package step
     find "{{destdir}}" -type d -exec chmod 755 {} +
     find "{{destdir}}"/usr -type f -executable -exec chmod 755 {} + || true

@@ -4,8 +4,9 @@ Multi-format archive and compression library.
 
 | Name | Version | Source URL | Checksum |
 | --- | --- | --- | --- |
-| libarchive | 3.7.7 | https://github.com/libarchive/libarchive/releases/download/v3.7.7/libarchive-3.7.7.tar.gz | 4cc540a3e9a1eebdefa1045d2e4184831100667e6d7d5b315bb1cbc951f8ddff |
+| libarchive | 3.7.9 | https://github.com/libarchive/libarchive/releases/download/v3.7.9/libarchive-3.7.9.tar.gz | aa90732c5a6bdda52fda2ad468ac98d75be981c15dde263d7b5cf6af66fd009f |
 
 ## Upgrade Notes
-* Package updated to version 3.7.7 to address active CVEs (including ALPINE-CVE-2024-20696).
+* Package updated to version 3.7.9 to address active CVEs (including ALPINE-CVE-2024-57970).
 * Compilation and packaging executed successfully without errors or required patches.
+* Successfully built and verified by the Build & Fixer Agent inside the systemd-nspawn sandbox environment (with dynamic Musl and Zlib linking).

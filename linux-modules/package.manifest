@@ -1,0 +1,12 @@
+[package]
+name = "linux-modules"
+version = "7.1.0"
+description = "Driver modules for Mainline Linux Kernel"
+group = "linux"
+dependencies = [
+]
+
+[build]
+dependencies = [
+    "linux-mainline", "llvm", "make"
+]

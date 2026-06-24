@@ -1,13 +1,13 @@
 [package]
 name = "python3"
-version = "3.12.8"
+version = "3.12.9"
 description = "Python Programming Language"
 dependencies = ["musl", "zlib", "openssl", "bzip2", "xz"]
 group = "base"
 
 [[sources]]
-url = "https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tar.xz"
-checksum = { algorithm = "sha256", value = "c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e" }
+url = "https://www.python.org/ftp/python/3.12.9/Python-3.12.9.tar.xz"
+checksum = { algorithm = "sha256", value = "7220835d9f90b37c006e9842a8dff4580aaca4318674f947302b8d28f3f81112" }
 
 [build]
 
