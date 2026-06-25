@@ -1,0 +1,16 @@
+[package]
+name = "zsh"
+version = "5.9.1"
+description = "A very advanced and programmable command interpreter (shell)"
+dependencies = ["musl", "ncurses", "libcap"]
+group = "server"
+
+[[sources]]
+url = "https://www.zsh.org/pub/zsh-5.9.1.tar.xz"
+checksum = { algorithm = "sha256", value = "5d20bec03f981dc4e9a09ec245e7415388ff641f79c5c5c416b5042e58d8280d" }
+
+[build]
+dependencies = ["musl", "ncurses", "libcap"]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --sbindir=/usr/bin --libdir=/usr/lib --sysconfdir=/etc/zsh --enable-etcdir=/etc/zsh --enable-multibyte --with-tcsetpgrp --enable-cap"

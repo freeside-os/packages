@@ -1,0 +1,13 @@
+[package]
+name = "nmap"
+version = "7.99"
+description = "Nmap is a utility for network exploration and security auditing."
+group = "server"
+dependencies = ["musl", "openssl", "zlib"]
+
+[build]
+dependencies = ["musl", "openssl", "zlib", "linux-headers"]
+
+[[sources]]
+url = "https://nmap.org/dist/nmap-7.99.tar.bz2"
+checksum = { algorithm = "sha256", value = "df512492ffd108e53a27a06f26d8635bbe89e0e569455dc8ffef058c035d51b2" }

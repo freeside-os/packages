@@ -1,0 +1,10 @@
+[package]
+name = "fish"
+version = "4.8.0"
+description = "A smart and user-friendly command line shell"
+group = "server"
+dependencies = ["cmake", "ninja", "rust", "gettext", "ncurses", "pkgconf"]
+
+[[sources]]
+url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.0/fish-4.8.0.tar.xz"
+checksum = { algorithm = "sha256", value = "33af62c7df2fa553e0e84fa81f6ea48acf98c2bfc50036eaacc70ac8ba63e707" }

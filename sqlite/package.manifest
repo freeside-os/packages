@@ -1,6 +1,6 @@
 [package]
 name = "sqlite"
-version = "3.45.3"
+version = "3.48.0-r1"
 description = "Self-contained, serverless, zero-configuration SQL database engine"
 dependencies = ["musl"]
 group = "base"

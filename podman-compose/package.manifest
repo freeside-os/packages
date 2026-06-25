@@ -1,0 +1,13 @@
+[package]
+name = "podman-compose"
+version = "1.6.0"
+description = "An implementation of Compose Spec with Podman backend"
+dependencies = ["python3", "podman"]
+group = "server"
+
+[build]
+dependencies = ["python3", "setuptools"]
+
+[[build.sources]]
+url = "https://github.com/containers/podman-compose/archive/refs/tags/v1.6.0.tar.gz"
+hash = { algo = "sha256", value = "dffdec88deb6da8437a86d82340e213c3a616933807fe3fd5978f0c8c325e5e2" }

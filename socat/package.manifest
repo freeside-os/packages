@@ -1,0 +1,19 @@
+[package]
+name = "socat"
+version = "1.8.1.1"
+description = "Multipurpose relay for bidirectional data transfer"
+dependencies = ["musl", "openssl", "readline"]
+group = "server"
+
+[[sources]]
+url = "http://www.dest-unreach.org/socat/download/socat-1.8.1.1.tar.gz"
+checksum = { algorithm = "sha256", value = "f68b602c80e94b4b7498d74ec408785536fe33534b39467977a82ab2f7f01ddb" }
+
+[build]
+dependencies = ["musl", "openssl", "readline"]
+sources = [
+    { url = "http://www.dest-unreach.org/socat/download/socat-1.8.1.1.tar.gz", hash = { algo = "sha256", value = "f68b602c80e94b4b7498d74ec408785536fe33534b39467977a82ab2f7f01ddb" } }
+]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var"

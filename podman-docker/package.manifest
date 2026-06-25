@@ -1,0 +1,13 @@
+[package]
+name = "podman-docker"
+version = "5.8.3"
+description = "Emulate Docker CLI using Podman"
+dependencies = ["podman", "musl"]
+group = "server"
+
+[[sources]]
+url = "https://github.com/containers/podman/archive/refs/tags/v5.8.3.tar.gz"
+checksum = { algorithm = "sha256", value = "c54a2ec4b4fb5577288992aaa78684397ec3552fb2d1234d910ec50097d05c0f" }
+
+[build]
+dependencies = ["musl", "make", "gettext", "sed"]
