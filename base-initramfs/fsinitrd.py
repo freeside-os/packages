@@ -168,6 +168,7 @@ def inject_boot_symlinks(staging_dir):
         "usr/sbin": "bin",
         "etc/passwd": "../usr/share/freeside/etc/passwd",
         "etc/group": "../usr/share/freeside/etc/group",
+        "etc/systemd/system/systemd-vconsole-setup.service": "/dev/null",
         "init": "usr/lib/systemd/systemd" # systemd runs natively as PID 1
     }
     
