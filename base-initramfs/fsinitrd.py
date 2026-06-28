@@ -25,6 +25,7 @@ from pathlib import Path
 # Required package base blocks to extract into the initramfs
 REQUIRED_BOOT_PACKAGES = [
     "musl",
+    "base-files",
     "systemd",
     "cryptsetup",
     "btrfs-progs",
@@ -139,10 +140,20 @@ def create_freeside_vfs_skeleton(staging_dir):
     
     dirs = [
         "proc", "sys", "run", "sysroot", "etc", "dev",
-        "usr/bin", "usr/lib", "usr/share"
+        "usr/bin", "usr/lib", "usr/share",
+        "var", "var/log", "var/lib", "var/lib/udev",
+        "dev/mqueue", "dev/hugepages",
+        "sys/kernel/debug", "sys/kernel/config", "sys/kernel/tracing",
+        "sys/fs/fuse/connections"
     ]
     for d in dirs:
         os.makedirs(os.path.join(staging_dir, d), exist_ok=True)
+
+    # Set explicit world-writable sticky bit permissions on tmp directories
+    for tmp_dir in ["tmp", "var/tmp"]:
+        tmp_path = os.path.join(staging_dir, tmp_dir)
+        os.makedirs(tmp_path, exist_ok=True)
+        os.chmod(tmp_path, 0o1777)
 
 def inject_boot_symlinks(staging_dir):
     """Creates systemd-boot compatibility symlinks and initialization scripts."""
@@ -154,13 +165,20 @@ def inject_boot_symlinks(staging_dir):
         "sbin": "usr/bin",
         "lib": "usr/lib",
         "lib64": "usr/lib",
+        "usr/sbin": "bin",
+        "etc/passwd": "../usr/share/freeside/etc/passwd",
+        "etc/group": "../usr/share/freeside/etc/group",
         "init": "usr/lib/systemd/systemd" # systemd runs natively as PID 1
     }
     
     for link, target in symlinks.items():
         link_path = os.path.join(staging_dir, link)
+        os.makedirs(os.path.dirname(link_path), exist_ok=True)
         if os.path.exists(link_path) or os.path.islink(link_path):
-            os.remove(link_path)
+            if os.path.isdir(link_path) and not os.path.islink(link_path):
+                shutil.rmtree(link_path)
+            else:
+                os.remove(link_path)
         os.symlink(target, link_path)
 
     # 2. Systemd Signaling Configuration
@@ -176,6 +194,14 @@ def inject_boot_symlinks(staging_dir):
     if not os.path.exists(os_rel):
         with open(os_rel, "w") as f:
             f.write("NAME=\"Freeside OS\"\nID=freeside\nVERSION_ID=0.1.0\n")
+
+    # 3. Apply overrides to disable OOMScoreAdjust for systemd services under musl
+    override_content = "[Service]\nOOMScoreAdjust=\n"
+    for svc in ["systemd-journald.service", "systemd-udevd.service"]:
+        svc_dir = os.path.join(etc_dir, "systemd/system", f"{svc}.d")
+        os.makedirs(svc_dir, exist_ok=True)
+        with open(os.path.join(svc_dir, "override.conf"), "w") as f:
+            f.write(override_content)
 
 def list_cpio_archive(filepath):
     """Parses and lists the contents of a compressed newc CPIO archive."""
@@ -353,9 +379,10 @@ def main():
                         data=target_bytes
                     )
                 else:
+                    dir_stat = os.stat(full_path)
                     cpio.write_record(
                         name=rel_path,
-                        mode=stat.S_IFDIR | 0o755,
+                        mode=stat.S_IFDIR | (dir_stat.st_mode & 0o7777),
                         uid=0, gid=0
                     )
             
