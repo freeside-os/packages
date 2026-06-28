@@ -22,6 +22,10 @@ import argparse
 import stat
 from pathlib import Path
 
+# ---------------------------------------------------------
+# Toolchain Configurations & Manifest Constants
+# ---------------------------------------------------------
+
 # Required package base blocks to extract into the initramfs
 REQUIRED_BOOT_PACKAGES = [
     "musl",
@@ -40,6 +44,45 @@ REQUIRED_BOOT_PACKAGES = [
     "json-c"
 ]
 
+# Excluded paths to keep the initramfs lightweight
+PAYLOAD_EXCLUDE_FILTERS = [
+    "/include/", "/share/man/", "/share/doc/", "/lib/pkgconfig/"
+]
+
+# Foundational VFS folders pre-created on early boot
+VFS_SKELETON_DIRECTORIES = [
+    "proc", "sys", "run", "sysroot", "etc", "dev",
+    "usr/bin", "usr/lib", "usr/share",
+    "var", "var/log", "var/lib", "var/lib/udev",
+    "dev/mqueue", "dev/hugepages",
+    "sys/kernel/debug", "sys/kernel/config", "sys/kernel/tracing",
+    "sys/fs/fuse/connections"
+]
+
+# Sticky bit directories (chmod 1777)
+VFS_STICKY_DIRECTORIES = ["tmp", "var/tmp"]
+
+# Compatibility symlinks injected into initramfs root
+VFS_COMPATIBILITY_SYMLINKS = {
+    "bin": "usr/bin",
+    "sbin": "usr/bin",
+    "lib": "usr/lib",
+    "lib64": "usr/lib",
+    "usr/sbin": "bin",
+    "etc/passwd": "../usr/share/freeside/etc/passwd",
+    "etc/group": "../usr/share/freeside/etc/group",
+    "etc/systemd/system/systemd-vconsole-setup.service": "/dev/null",
+    "init": "usr/lib/systemd/systemd"
+}
+
+# Override drop-ins to disable OOMScoreAdjust for systemd services under musl
+OOM_OVERRIDE_SERVICES = [
+    "systemd-journald.service",
+    "systemd-udevd.service"
+]
+OOM_OVERRIDE_CONTENT = "[Service]\nOOMScoreAdjust=\n"
+
+
 class CpioWriter:
     """
     Programmatic POSIX cpio newc archive generator.
@@ -49,59 +92,92 @@ class CpioWriter:
         self.output = output_file
         self.inode_counter = 1
 
-    def _pad(self, data, alignment=4):
-        """Pads data with null bytes to align with the specified boundary."""
-        remainder = len(data) % alignment
-        if remainder != 0:
-            data += b"\x00" * (alignment - remainder)
-        return data
+    def _write_padded(self, header_data, body_data=b"", body_len=0, alignment=4):
+        """Writes header and body data, padding each field to alignment boundaries."""
+        # Write header
+        self.output.write(header_data)
+        
+        # Calculate and write header padding
+        header_len = len(header_data)
+        header_rem = header_len % alignment
+        if header_rem != 0:
+            self.output.write(b"\x00" * (alignment - header_rem))
+            
+        # Write body data
+        if body_len > 0:
+            self.output.write(body_data)
+            body_rem = body_len % alignment
+            if body_rem != 0:
+                self.output.write(b"\x00" * (alignment - body_rem))
 
     def write_record(self, name, mode, uid=0, gid=0, filesize=0, rdev_major=0, rdev_minor=0, data=b""):
         """Writes a single newc CPIO record to the output stream."""
-        # Clean up path names (cpio paths must be relative and lack leading slashes)
         name_bytes = name.lstrip("/").encode("utf-8")
         namesize = len(name_bytes) + 1  # Includes trailing null byte
 
-        # Create the 110-byte ASCII hex header
+        # 110-byte ASCII hex header
         # fields: magic(6), ino(8), mode(8), uid(8), gid(8), nlink(8), mtime(8),
         #         filesize(8), devmajor(8), devminor(8), rdevmajor(8), rdevminor(8),
         #         namesize(8), check(8)
-        header = (
+        header_meta = (
             b"070701" +
             f"{self.inode_counter:08x}".encode() +
             f"{mode:08x}".encode() +
             f"{uid:08x}".encode() +
             f"{gid:08x}".encode() +
-            b"00000001" + # nlink (always 1 for simplicity)
-            b"00000000" + # mtime
+            b"00000001" +  # nlink
+            b"00000000" +  # mtime
             f"{filesize:08x}".encode() +
-            b"00000003" + # devmajor
-            b"00000001" + # devminor
+            b"00000003" +  # devmajor
+            b"00000001" +  # devminor
             f"{rdev_major:08x}".encode() +
             f"{rdev_minor:08x}".encode() +
             f"{namesize:08x}".encode() +
-            b"00000000"   # check (must be 0 for newc format)
+            b"00000000"    # check
         )
 
         self.inode_counter += 1
 
-        # Write header
-        self.output.write(header)
-        
-        # Write filename + null terminator + padding
-        self.output.write(name_bytes + b"\x00")
-        self.output.write(b"\x00" * ((4 - (len(header) + len(name_bytes) + 1) % 4) % 4)) # Pad total header+name to 4 bytes
+        # Combine header meta + filename bytes + null terminator
+        header_data = header_meta + name_bytes + b"\x00"
+        self._write_padded(header_data, body_data=data, body_len=filesize, alignment=4)
 
-        # Write data + padding
-        if filesize > 0:
-            self.output.write(data)
-            remainder = filesize % 4
-            if remainder != 0:
-                self.output.write(b"\x00" * (4 - remainder))
+    def write_directory(self, name, mode=0o755):
+        """Writes a directory record."""
+        self.write_record(name, mode=stat.S_IFDIR | mode)
+
+    def write_symlink(self, name, target):
+        """Writes a symbolic link record."""
+        target_bytes = target.encode("utf-8")
+        self.write_record(
+            name=name,
+            mode=stat.S_IFLNK | 0o777,
+            filesize=len(target_bytes),
+            data=target_bytes
+        )
+
+    def write_file(self, name, mode, data):
+        """Writes a regular file record."""
+        self.write_record(
+            name=name,
+            mode=stat.S_IFREG | mode,
+            filesize=len(data),
+            data=data
+        )
+
+    def write_device_node(self, name, mode, major, minor):
+        """Writes a character or block device node record."""
+        self.write_record(
+            name=name,
+            mode=mode,
+            rdev_major=major,
+            rdev_minor=minor
+        )
 
     def write_trailer(self):
         """Writes the final TRAILER!!! cpio record indicating end of archive."""
         self.write_record("TRAILER!!!", mode=0, filesize=0)
+
 
 def find_package_archive(packages_dir, package_name):
     """Finds the latest compiled .tar.gz or .tgz package for a given name."""
@@ -109,7 +185,7 @@ def find_package_archive(packages_dir, package_name):
     if not p_dir.exists():
         return None
     
-    # Matches patterns like musl-1.2.5.tar.gz or musl-1.2.5.tgz, ensuring version starts with a digit
+    # Matches patterns like musl-1.2.5-1.tar.gz, ensuring version starts with a digit
     matches = list(p_dir.glob(f"{package_name}-[0-9]*.tar.gz")) + list(p_dir.glob(f"{package_name}-[0-9]*.tgz"))
     if not matches:
         # Fallback to general pattern if no digit-prefixed version is found
@@ -121,58 +197,37 @@ def find_package_archive(packages_dir, package_name):
     # Return the one with the latest modification time (most recent build)
     return max(matches, key=lambda p: p.stat().st_mtime)
 
+
 def extract_early_boot_payload(archive_path, dest_dir):
     """Extracts only base filesystem dependencies needed for initial user-space."""
     print(f"[*] Unpacking early boot files from {archive_path.name}...")
     with tarfile.open(archive_path, "r:gz") as tar:
         for member in tar.getmembers():
-            # Filter layout rules: we only want executables, configs, and library layers.
-            # Strip files like headers, manuals, or auxiliary build files to keep initramfs small.
-            if any(p in member.name for p in ["/include/", "/share/man/", "/share/doc/", "/lib/pkgconfig/"]):
+            # Filter layout rules: strip files like headers, manuals, or auxiliary build files
+            if any(p in member.name for p in PAYLOAD_EXCLUDE_FILTERS):
                 continue
-            
-            # Extract to target directory path
             tar.extract(member, path=dest_dir)
+
 
 def create_freeside_vfs_skeleton(staging_dir):
     """Generates empty directories and critical base system layouts."""
     print("[*] Creating Freeside VFS directory hierarchy...")
     
-    dirs = [
-        "proc", "sys", "run", "sysroot", "etc", "dev",
-        "usr/bin", "usr/lib", "usr/share",
-        "var", "var/log", "var/lib", "var/lib/udev",
-        "dev/mqueue", "dev/hugepages",
-        "sys/kernel/debug", "sys/kernel/config", "sys/kernel/tracing",
-        "sys/fs/fuse/connections"
-    ]
-    for d in dirs:
+    for d in VFS_SKELETON_DIRECTORIES:
         os.makedirs(os.path.join(staging_dir, d), exist_ok=True)
 
     # Set explicit world-writable sticky bit permissions on tmp directories
-    for tmp_dir in ["tmp", "var/tmp"]:
+    for tmp_dir in VFS_STICKY_DIRECTORIES:
         tmp_path = os.path.join(staging_dir, tmp_dir)
         os.makedirs(tmp_path, exist_ok=True)
         os.chmod(tmp_path, 0o1777)
+
 
 def inject_boot_symlinks(staging_dir):
     """Creates systemd-boot compatibility symlinks and initialization scripts."""
     print("[*] Injecting systemd un-merged /usr boot paths...")
     
-    # 1. Platform Symlinks
-    symlinks = {
-        "bin": "usr/bin",
-        "sbin": "usr/bin",
-        "lib": "usr/lib",
-        "lib64": "usr/lib",
-        "usr/sbin": "bin",
-        "etc/passwd": "../usr/share/freeside/etc/passwd",
-        "etc/group": "../usr/share/freeside/etc/group",
-        "etc/systemd/system/systemd-vconsole-setup.service": "/dev/null",
-        "init": "usr/lib/systemd/systemd" # systemd runs natively as PID 1
-    }
-    
-    for link, target in symlinks.items():
+    for link, target in VFS_COMPATIBILITY_SYMLINKS.items():
         link_path = os.path.join(staging_dir, link)
         os.makedirs(os.path.dirname(link_path), exist_ok=True)
         if os.path.exists(link_path) or os.path.islink(link_path):
@@ -182,11 +237,11 @@ def inject_boot_symlinks(staging_dir):
                 os.remove(link_path)
         os.symlink(target, link_path)
 
-    # 2. Systemd Signaling Configuration
+    # Systemd Signaling Configuration
     etc_dir = os.path.join(staging_dir, "etc")
     os.makedirs(etc_dir, exist_ok=True)
     
-    # Write initrd-release so systemd initializes in target RAM mode
+    # Write initrd-release so systemd initializes in RAM mode
     with open(os.path.join(etc_dir, "initrd-release"), "w") as f:
         f.write("# Freeside OS Initrd Signaling Profile\n")
 
@@ -196,13 +251,62 @@ def inject_boot_symlinks(staging_dir):
         with open(os_rel, "w") as f:
             f.write("NAME=\"Freeside OS\"\nID=freeside\nVERSION_ID=0.1.0\n")
 
-    # 3. Apply overrides to disable OOMScoreAdjust for systemd services under musl
-    override_content = "[Service]\nOOMScoreAdjust=\n"
-    for svc in ["systemd-journald.service", "systemd-udevd.service"]:
+    # Apply overrides to disable OOMScoreAdjust for systemd services under musl
+    for svc in OOM_OVERRIDE_SERVICES:
         svc_dir = os.path.join(etc_dir, "systemd/system", f"{svc}.d")
         os.makedirs(svc_dir, exist_ok=True)
         with open(os.path.join(svc_dir, "override.conf"), "w") as f:
-            f.write(override_content)
+            f.write(OOM_OVERRIDE_CONTENT)
+
+
+def build_cpio_archive(staging_dir, output_path):
+    """Walks the staging directory and packages it into a compressed CPIO archive."""
+    print("[*] Packaging staging workspace into compressed newc CPIO archive...")
+    
+    with gzip.open(output_path, "wb", compresslevel=9) as gz_out:
+        cpio = CpioWriter(gz_out)
+
+        # 1. Explicitly Inject Hardcoded Secure System Device Nodes
+        # Major 5, Minor 1 for /dev/console; Major 1, Minor 3 for /dev/null
+        cpio.write_device_node("dev/console", stat.S_IFCHR | 0o600, 5, 1)
+        cpio.write_device_node("dev/null", stat.S_IFCHR | 0o666, 1, 3)
+
+        # 2. Force add root dev folder to ensure correct permissions
+        cpio.write_directory("dev", mode=0o755)
+
+        # 3. Walk the compiled rootfs staging layout and package it
+        for root, dirs, files in os.walk(staging_dir):
+            # Process directory entries
+            for d in dirs:
+                full_path = os.path.join(root, d)
+                rel_path = os.path.relpath(full_path, staging_dir)
+                
+                # Skip duplicate /dev/console, /dev/null and /dev nodes
+                if rel_path in ["dev/console", "dev/null", "dev"]:
+                    continue
+
+                if os.path.islink(full_path):
+                    cpio.write_symlink(rel_path, os.readlink(full_path))
+                else:
+                    dir_stat = os.stat(full_path)
+                    cpio.write_directory(rel_path, mode=(dir_stat.st_mode & 0o7777))
+
+            # Process file entries
+            for f in files:
+                full_path = os.path.join(root, f)
+                rel_path = os.path.relpath(full_path, staging_dir)
+
+                if os.path.islink(full_path):
+                    cpio.write_symlink(rel_path, os.readlink(full_path))
+                else:
+                    file_stat = os.stat(full_path)
+                    with open(full_path, "rb") as bin_file:
+                        file_data = bin_file.read()
+                    cpio.write_file(rel_path, mode=(file_stat.st_mode & 0o777), data=file_data)
+
+        # 4. Write Trailer indicator block
+        cpio.write_trailer()
+
 
 def list_cpio_archive(filepath):
     """Parses and lists the contents of a compressed newc CPIO archive."""
@@ -276,6 +380,7 @@ def list_cpio_archive(filepath):
             print(f"? {name:<60} (mode={oct(mode)})")
     print("=================================================================")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Assemble Freeside OS initramfs base image")
     parser.add_argument(
@@ -321,114 +426,34 @@ def main():
         shutil.rmtree(staging_dir)
     os.makedirs(staging_dir, exist_ok=True)
 
-    # Step 2: Establish the foundational skeleton layouts
-    create_freeside_vfs_skeleton(staging_dir)
+    try:
+        # Step 2: Establish the foundational skeleton layouts
+        create_freeside_vfs_skeleton(staging_dir)
 
-    # Step 3: Unpack required base-system packages
-    for pkg in REQUIRED_BOOT_PACKAGES:
-        archive = find_package_archive(packages_dir, pkg)
-        if not archive:
-            print(f"[-] ERROR: Required boot dependency '{pkg}' was not found inside the packages directory!")
-            print(f"    Verify that Stage 2 compilations succeeded.")
-            sys.exit(1)
-        extract_early_boot_payload(archive, staging_dir)
+        # Step 3: Unpack required base-system packages
+        for pkg in REQUIRED_BOOT_PACKAGES:
+            archive = find_package_archive(packages_dir, pkg)
+            if not archive:
+                print(f"[-] ERROR: Required boot dependency '{pkg}' was not found inside the packages directory!")
+                print(f"    Verify that Stage 2 compilations succeeded.")
+                sys.exit(1)
+            extract_early_boot_payload(archive, staging_dir)
 
-    # Step 4: Map system directories and setup systemd hooks
-    inject_boot_symlinks(staging_dir)
+        # Step 4: Map system directories and setup systemd hooks
+        inject_boot_symlinks(staging_dir)
 
-    # Step 5: Programmatic packaging execution via CpioWriter
-    print("[*] Packaging staging workspace into compressed newc CPIO archive...")
-    
-    # Initialize gzip dynamic compression stream
-    with gzip.open(output_path, "wb", compresslevel=9) as gz_out:
-        cpio = CpioWriter(gz_out)
+        # Step 5: Programmatic packaging execution via CpioWriter
+        build_cpio_archive(staging_dir, output_path)
 
-        # A. Explicitly Inject Hardcoded Secure System Device Nodes
-        # This completely bypasses the host host-access mknod permission errors.
-        # Major 5, Minor 1 for /dev/console
-        # Major 1, Minor 3 for /dev/null
-        cpio.write_record(
-            name="dev/console",
-            mode=stat.S_IFCHR | 0o600,
-            uid=0, gid=0,
-            rdev_major=5, rdev_minor=1
-        )
-        cpio.write_record(
-            name="dev/null",
-            mode=stat.S_IFCHR | 0o666,
-            uid=0, gid=0,
-            rdev_major=1, rdev_minor=3
-        )
-
-        # B. Walk the compiled rootfs staging layout and package it programmatically
-        # Note: os.walk returns relative folders, we must maintain relativeness inside CPIO.
-        for root, dirs, files in os.walk(staging_dir):
-            for d in dirs:
-                full_path = os.path.join(root, d)
-                rel_path = os.path.relpath(full_path, staging_dir)
-                # Keep rootfs clean (ignore explicit host device node folders if created)
-                if rel_path in ["dev/console", "dev/null", "dev"]:
-                    continue
-                if os.path.islink(full_path):
-                    target = os.readlink(full_path)
-                    target_bytes = target.encode("utf-8")
-                    cpio.write_record(
-                        name=rel_path,
-                        mode=stat.S_IFLNK | 0o777,
-                        uid=0, gid=0,
-                        filesize=len(target_bytes),
-                        data=target_bytes
-                    )
-                else:
-                    dir_stat = os.stat(full_path)
-                    cpio.write_record(
-                        name=rel_path,
-                        mode=stat.S_IFDIR | (dir_stat.st_mode & 0o7777),
-                        uid=0, gid=0
-                    )
-            
-            # Force add root dev folder (stripped out above)
-            cpio.write_record("dev", mode=stat.S_IFDIR | 0o755, uid=0, gid=0)
-
-            for f in files:
-                full_path = os.path.join(root, f)
-                rel_path = os.path.relpath(full_path, staging_dir)
-                
-                # Check for symlinks and write link records accordingly
-                if os.path.islink(full_path):
-                    target = os.readlink(full_path)
-                    target_bytes = target.encode("utf-8")
-                    cpio.write_record(
-                        name=rel_path,
-                        mode=stat.S_IFLNK | 0o777,
-                        uid=0, gid=0,
-                        filesize=len(target_bytes),
-                        data=target_bytes
-                    )
-                else:
-                    # Write regular files
-                    with open(full_path, "rb") as bin_file:
-                        file_data = bin_file.read()
-                    
-                    # Copy execution/read permissions directly from filesystem
-                    file_stat = os.stat(full_path)
-                    cpio.write_record(
-                        name=rel_path,
-                        mode=stat.S_IFREG | (file_stat.st_mode & 0o777),
-                        uid=0, gid=0,
-                        filesize=len(file_data),
-                        data=file_data
-                    )
-
-        # Write Trailer indicator block
-        cpio.write_trailer()
-
-    # Clean up local staging workspaces
-    shutil.rmtree(staging_dir)
+    finally:
+        # Clean up local staging workspaces
+        if os.path.exists(staging_dir):
+            shutil.rmtree(staging_dir)
 
     print("[+] Success! Byte-reproducible initramfs base image written successfully.")
     print(f"    Target Location: {output_path}")
     print("=================================================================")
+
 
 if __name__ == "__main__":
     main()
