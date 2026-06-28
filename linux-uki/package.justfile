@@ -15,7 +15,7 @@ package:
         --os-release=@/etc/os-release \
         --cmdline=@cmdline \
         --initrd=/usr/lib/freeside/initramfs.cpio \
-        --linux=/usr/lib/freeside/kernel/vmlinuz \
+        --linux=/usr/lib/freeside/linux/kernel/vmlinuz \
         --stub=/usr/lib/systemd/boot/efi/linuxx64.efi.stub \
         --output="{{destdir}}"/usr/lib/kernel/uki-{{pkg_version}}.efi
 

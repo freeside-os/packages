@@ -7,8 +7,9 @@ build:
 
 package:
     # Copy the kernel vmlinuz (bzImage) from the linux-mainline build tree
-    mkdir -p "{{destdir}}"/usr/lib/freeside/kernel
-    cp /usr/lib/freeside/linux/linux-mainline/arch/x86/boot/bzImage "{{destdir}}"/usr/lib/freeside/kernel/vmlinuz
+    mkdir -p "{{destdir}}"/usr/lib/freeside/linux/kernel
+    cp /usr/lib/freeside/linux/mainline/vmlinuz "{{destdir}}"/usr/lib/freeside/linux/kernel/vmlinuz
+    cp /usr/lib/freeside/linux/mainline/System.map "{{destdir}}"/usr/lib/freeside/linux/kernel/System.map
     
     # Enforce strict permissions
     find "{{destdir}}" -type d -exec chmod 755 {} +

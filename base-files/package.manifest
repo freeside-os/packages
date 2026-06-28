@@ -1,12 +1,12 @@
 [package]
 name = "base-files"
-version = "1.0.0"
+version = "1.1.0"
 description = "Freeside OS base filesystem layout, directory topologies, and core OverlayFS templates"
 dependencies = []
 group = "base"
 
 [[sources]]
-file = "base-files-1.0.0.tar.gz"
+file = "base-files-1.1.0.tar.gz"
 checksum = { algorithm = "sha256", value = "c20c6b3d033d91e222cf322ece5afd617f2f4fdc8322dac51dffcd4e49309676" }
 
 [[sources]]
@@ -17,5 +17,12 @@ checksum = { algorithm = "sha256", value = "11cc53bcebcfaaaf57acc69690ae2b465922
 file = "etc.mount"
 checksum = { algorithm = "sha256", value = "c548b6f35a37d8df161fe4ae6b7323c9759d1615c27187677e09b02c8138b903" }
 
+[[sources]]
+file = "os-release"
+checksum = { algorithm = "sha256", value = "421f486916e967de9d6770fa1cd304e7b1be11254ec92959a00321b1dfedc58b" }
+
 [build]
 dependencies = []
+
+[build.environment]
+FREESIDE_VERSION = "0.1.0"

@@ -1,0 +1,8 @@
+NAME="Freeside OS"
+VERSION="__VERSION__"
+ID=freeside
+PRETTY_NAME="Freeside OS __VERSION__"
+VERSION_ID="__VERSION__"
+HOME_URL="https://github.com/freeside-os"
+SUPPORT_URL="https://github.com/freeside-os"
+BUG_REPORT_URL="https://github.com/freeside-os"

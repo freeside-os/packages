@@ -30,7 +30,13 @@ REQUIRED_BOOT_PACKAGES = [
     "btrfs-progs",
     "util-linux",
     "kmod",
-    "bash"
+    "bash",
+    "libcap",
+    "openssl",
+    "xz",
+    "zstd",
+    "zlib",
+    "json-c"
 ]
 
 class CpioWriter:
@@ -83,7 +89,7 @@ class CpioWriter:
         
         # Write filename + null terminator + padding
         self.output.write(name_bytes + b"\x00")
-        self.output.write(b"\x00" * (3 - (len(header) + len(name_bytes) + 1) % 4)) # Pad total header+name to 4 bytes
+        self.output.write(b"\x00" * ((4 - (len(header) + len(name_bytes) + 1) % 4) % 4)) # Pad total header+name to 4 bytes
 
         # Write data + padding
         if filesize > 0:
@@ -102,8 +108,12 @@ def find_package_archive(packages_dir, package_name):
     if not p_dir.exists():
         return None
     
-    # Matches patterns like musl-1.2.5.tar.gz or musl-1.2.5.tgz
-    matches = list(p_dir.glob(f"{package_name}-*.tar.gz")) + list(p_dir.glob(f"{package_name}-*.tgz"))
+    # Matches patterns like musl-1.2.5.tar.gz or musl-1.2.5.tgz, ensuring version starts with a digit
+    matches = list(p_dir.glob(f"{package_name}-[0-9]*.tar.gz")) + list(p_dir.glob(f"{package_name}-[0-9]*.tgz"))
+    if not matches:
+        # Fallback to general pattern if no digit-prefixed version is found
+        matches = list(p_dir.glob(f"{package_name}-*.tar.gz")) + list(p_dir.glob(f"{package_name}-*.tgz"))
+        
     if not matches:
         return None
     
@@ -167,6 +177,78 @@ def inject_boot_symlinks(staging_dir):
         with open(os_rel, "w") as f:
             f.write("NAME=\"Freeside OS\"\nID=freeside\nVERSION_ID=0.1.0\n")
 
+def list_cpio_archive(filepath):
+    """Parses and lists the contents of a compressed newc CPIO archive."""
+    print("=================================================================")
+    print(f"[*] Listing archive: {filepath}")
+    print("=================================================================")
+    try:
+        with gzip.open(filepath, "rb") as f:
+            data = f.read()
+    except Exception as e:
+        print(f"[-] ERROR: Failed to open/decompress archive: {e}")
+        sys.exit(1)
+
+    offset = 0
+    while offset < len(data):
+        if offset + 110 > len(data):
+            print(f"[-] ERROR: Truncated header at offset {offset}")
+            break
+
+        header = data[offset:offset+110]
+        if not header.startswith(b"070701"):
+            print(f"[-] ERROR: Invalid magic at offset {offset}: {header[:6]}")
+            break
+
+        try:
+            mode = int(header[14:22], 16)
+            filesize = int(header[54:62], 16)
+            namesize = int(header[94:102], 16)
+        except ValueError as e:
+            print(f"[-] ERROR: Corrupt header fields at offset {offset}: {e}")
+            break
+
+        offset += 110
+
+        if offset + namesize > len(data):
+            print(f"[-] ERROR: Truncated filename at offset {offset}")
+            break
+
+        name_bytes = data[offset:offset+namesize]
+        name = name_bytes.split(b"\x00")[0].decode("utf-8", errors="replace")
+
+        # Pad name to 4 bytes
+        name_pad = (4 - (110 + namesize) % 4) % 4
+        offset += namesize + name_pad
+
+        if offset + filesize > len(data):
+            print(f"[-] ERROR: Truncated file data at offset {offset}")
+            break
+
+        filedata = data[offset:offset+filesize]
+        file_pad = (4 - filesize % 4) % 4
+        offset += filesize + file_pad
+
+        if name == "TRAILER!!!":
+            break
+
+        if stat.S_ISLNK(mode):
+            target = filedata.decode("utf-8", errors="replace")
+            print(f"l {name} -> {target}")
+        elif stat.S_ISREG(mode):
+            perms = oct(mode & 0o777)[2:]
+            print(f"- {name:<60} (size={filesize:<8}, perms={perms})")
+        elif stat.S_ISDIR(mode):
+            perms = oct(mode & 0o777)[2:]
+            print(f"d {name:<60} (perms={perms})")
+        elif stat.S_ISCHR(mode):
+            print(f"c {name:<60}")
+        elif stat.S_ISBLK(mode):
+            print(f"b {name:<60}")
+        else:
+            print(f"? {name:<60} (mode={oct(mode)})")
+    print("=================================================================")
+
 def main():
     parser = argparse.ArgumentParser(description="Assemble Freeside OS initramfs base image")
     parser.add_argument(
@@ -184,7 +266,16 @@ def main():
         default="build/initramfs-staging",
         help="Temporary directory utilized to compile and structure the VFS"
     )
+    parser.add_argument(
+        "--list",
+        metavar="FILEPATH",
+        help="List files in an existing compressed initramfs archive"
+    )
     args = parser.parse_args()
+
+    if args.list:
+        list_cpio_archive(args.list)
+        sys.exit(0)
 
     # Normalize input paths
     packages_dir = os.path.abspath(args.packages_dir)
@@ -251,11 +342,22 @@ def main():
                 # Keep rootfs clean (ignore explicit host device node folders if created)
                 if rel_path in ["dev/console", "dev/null", "dev"]:
                     continue
-                cpio.write_record(
-                    name=rel_path,
-                    mode=stat.S_IFDIR | 0o755,
-                    uid=0, gid=0
-                )
+                if os.path.islink(full_path):
+                    target = os.readlink(full_path)
+                    target_bytes = target.encode("utf-8")
+                    cpio.write_record(
+                        name=rel_path,
+                        mode=stat.S_IFLNK | 0o777,
+                        uid=0, gid=0,
+                        filesize=len(target_bytes),
+                        data=target_bytes
+                    )
+                else:
+                    cpio.write_record(
+                        name=rel_path,
+                        mode=stat.S_IFDIR | 0o755,
+                        uid=0, gid=0
+                    )
             
             # Force add root dev folder (stripped out above)
             cpio.write_record("dev", mode=stat.S_IFDIR | 0o755, uid=0, gid=0)

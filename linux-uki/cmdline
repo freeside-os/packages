@@ -1,1 +1,1 @@
-root=UUID=placeholder rw quiet systemd.volatile=overlay
+root=UUID=placeholder rw console=ttyS0 systemd.volatile=overlay

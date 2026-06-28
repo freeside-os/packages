@@ -10,8 +10,8 @@ build:
 package:
     # Install driver modules using the build tree at /usr/lib/freeside/linux/linux-mainline
     mkdir -p "{{destdir}}"/usr/lib/modules
-    cd /usr/lib/freeside/linux/linux-mainline && make ARCH=x86_64 {{llvm_flags}} INSTALL_MOD_PATH="{{destdir}}"/usr modules_install
-    
+    cp -r /usr/lib/freeside/linux/mainline/lib/modules/ /usr/lib/modules
+
     # Strip debugging symbols and remove transient development symlinks
     find "{{destdir}}"/usr/lib/modules/ -name "*.ko" -exec llvm-objcopy --strip-debug {} \;
     rm -f "{{destdir}}"/usr/lib/modules/{{pkg_version}}/build || true

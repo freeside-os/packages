@@ -12,6 +12,6 @@ Maintainer reference documentation for package version upgrades and security upd
 
 ## Upgrade Notes
 - Initial package recipe for bmon 4.0.
-- Statically bundles libconfuse 3.3 to satisfy dependency requirement without adding global overhead.
-- Compiled with `--disable-libnl` to ensure portability under musl without requiring netlink development headers.
+- Statically bundles libconfuse 3.3 and libnl 3.11.0 to satisfy dependency requirements without adding global overhead.
+- Added `bison` and `flex` as build dependencies.
 - Enforced UsrMerge and strict destination/permission compliance.

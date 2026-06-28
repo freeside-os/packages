@@ -1,12 +1,9 @@
-# Base Files Installation rules
 build:
     @echo "Preparing base-files layout..."
 
 package:
-    # 1. Unpack default lowerdir configurations (/usr/share/freeside/etc/passwd, etc.)
-    tar -xf $PKG_NAME-$PKG_VERSION.tar.gz -C "$DESTDIR"
-    
-    # 2. Assert read-only userspace structures are initialized
+    mkdir -p "$DESTDIR"
+    tar -xf "$PKG_NAME"-*.tar.gz -C "$DESTDIR"
     mkdir -p "$DESTDIR/usr/bin"
     mkdir -p "$DESTDIR/usr/lib"
     mkdir -p "$DESTDIR/usr/share"
@@ -14,19 +11,19 @@ package:
     mkdir -p "$DESTDIR/var"
     mkdir -p "$DESTDIR/boot"
     mkdir -p "$DESTDIR/usr/share/freeside/etc"
-    
-    # 3. Install the declarative tmpfiles configuration
     mkdir -p "$DESTDIR/usr/lib/tmpfiles.d"
     cp base-files.conf "$DESTDIR/usr/lib/tmpfiles.d/base-files.conf"
-    
-    # 4. Install the systemd etc.mount unit file
     mkdir -p "$DESTDIR/usr/lib/systemd/system"
     cp etc.mount "$DESTDIR/usr/lib/systemd/system/etc.mount"
-    
-    # 5. Enforce permissions
+    mkdir -p "$DESTDIR/usr/lib"
+    cp os-release "$DESTDIR/usr/lib/os-release"
+    sed -i "s/__VERSION__/$FREESIDE_VERSION/g" "$DESTDIR/usr/lib/os-release"
+    mkdir -p "$DESTDIR/etc"
+    ln -sf ../usr/lib/os-release "$DESTDIR/etc/os-release"
     find "$DESTDIR" -type d -exec chmod 755 {} +
     find "$DESTDIR/usr/lib/tmpfiles.d" -type f -exec chmod 644 {} +
     find "$DESTDIR/usr/lib/systemd/system" -type f -exec chmod 644 {} +
     find "$DESTDIR/usr/share/freeside/etc" -type f -exec chmod 644 {} +
-    
+    find "$DESTDIR/usr/bin" -type f -exec chmod 755 {} + || true
+    chmod 644 "$DESTDIR/usr/lib/os-release"
     @echo "Base files layout and declarative systemd configs staged successfully."

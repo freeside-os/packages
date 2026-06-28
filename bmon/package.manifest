@@ -3,7 +3,7 @@ name = "bmon"
 version = "4.0"
 description = "A portable bandwidth monitor and rate estimator with multiple output modes"
 group = "server"
-dependencies = ["ncurses", "pkgconf"]
+dependencies = ["ncurses", "pkgconf", "bison", "flex"]
 
 [[sources]]
 url = "https://github.com/tgraf/bmon/releases/download/v4.0/bmon-4.0.tar.gz"
@@ -13,7 +13,11 @@ checksum = { algorithm = "sha256", value = "02fdc312b8ceeb5786b28bf905f54328f414
 url = "https://github.com/martinh/libconfuse/releases/download/v3.3/confuse-3.3.tar.xz"
 checksum = { algorithm = "sha256", value = "1dd50a0320e135a55025b23fcdbb3f0a81913b6d0b0a9df8cc2fdf3b3dc67010" }
 
+[[sources]]
+url = "https://github.com/thom311/libnl/releases/download/libnl3_11_0/libnl-3.11.0.tar.gz"
+checksum = { algorithm = "sha256", value = "2a56e1edefa3e68a7c00879496736fdbf62fc94ed3232c0baba127ecfa76874d" }
+
 [build]
 
 [build.environment]
-dependencies = ["ncurses", "pkgconf"]
+dependencies = ["ncurses", "pkgconf", "bison", "flex"]

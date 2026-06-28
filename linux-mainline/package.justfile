@@ -2,6 +2,7 @@
 pkg_name := env_var_or_default("PKG_NAME", "linux-mainline")
 pkg_version := env_var_or_default("PKG_VERSION", "7.1.0")
 destdir := env_var_or_default("DESTDIR", "pkg-dest")
+linuxdir := destdir + "/usr/lib/freeside/linux/mainline"
 
 cc := "clang"
 ld := "ld.lld"
@@ -23,10 +24,10 @@ build: prepare
     make -j$(nproc) ARCH=x86_64 {{llvm_flags}} modules
 
 package:
-    # Copy the kernel build output/tree to the destination directory
-    mkdir -p "{{destdir}}"/usr/lib/freeside/linux/linux-mainline
-    cp -a . "{{destdir}}"/usr/lib/freeside/linux/linux-mainline
-
+    mkdir -p {{linuxdir}}
+    make INSTALL_PATH={{linuxdir}} install
+    make INSTALL_MOD_PATH={{linuxdir}} modules_install
+   
     # Strict permissions: Enforce chmod 755 on directories and binaries at the end of the package step
     find "{{destdir}}" -type d -exec chmod 755 {} +
     find "{{destdir}}"/usr -type f -executable -exec chmod 755 {} + || true
