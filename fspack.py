@@ -27,7 +27,8 @@ VALID_GROUPS = {
     "linux",
     "server", 
     "desktop", 
-    "extra"
+    "extra",
+    "live-image"
 }
 
 

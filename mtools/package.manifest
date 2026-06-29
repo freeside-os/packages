@@ -1,0 +1,10 @@
+[package]
+name = "mtools"
+version = "4.0.49"
+description = "A collection of utilities to access MS-DOS disks"
+group = "live-image"
+dependencies = ["bash", "musl"]
+
+[[sources]]
+url = "https://ftp.gnu.org/gnu/mtools/mtools-4.0.49.tar.bz2"
+checksum = { algorithm = "sha256", value = "6fe5193583d6e7c59da75e63d7234f76c0b07caf33b103894f46f66a871ffc9f" }
