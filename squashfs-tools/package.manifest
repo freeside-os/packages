@@ -1,0 +1,13 @@
+[package]
+name = "squashfs-tools"
+version = "4.7.5"
+description = "Tools for squashfs, a highly compressed read-only filesystem for Linux"
+group = "live-image"
+dependencies = ["musl", "zlib", "xz", "zstd"]
+
+[[sources]]
+url = "https://github.com/plougher/squashfs-tools/releases/download/4.7.5/squashfs-tools-4.7.5.tar.gz"
+checksum = { algorithm = "sha256", value = "547b7b7f4d2e44bf91b6fc554664850c69563701deab9fd9cd7e21f694c88ea6" }
+
+[build]
+dependencies = ["musl", "zlib", "xz", "zstd", "uutils-coreutils"]
