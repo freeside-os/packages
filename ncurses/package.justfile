@@ -4,9 +4,9 @@ build:
 
 package:
     cd "$PKG_NAME-$PKG_VERSION" && make DESTDIR="$DESTDIR" install
-    # Link libncurses to libncursesw for compatibility
     for lib in ncurses form panel menu; do \
         ln -sf lib${lib}w.so "$DESTDIR/usr/lib/lib${lib}.so"; \
+        ln -sf ${lib}w.pc "$DESTDIR/usr/lib/pkgconfig/${lib}.pc"; \
     done
     find "$DESTDIR" -type d -exec chmod 755 {} +
     if [ -d "$DESTDIR/usr/bin" ]; then find "$DESTDIR/usr/bin" -type f -exec chmod 755 {} +; fi
