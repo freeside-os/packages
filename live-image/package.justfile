@@ -24,16 +24,16 @@ build:
         echo "title   Freeside OS Live Installer"
         echo "linux   /vmlinuz"
         echo "initrd  /initramfs.cpio.gz"
-        echo "options console=ttyS0 earlyprintk=ttyS0 console=tty0 debug"
+        echo "options console=tty0 console=ttyS0 earlyprintk=serial,ttyS0,115200 debug"
     } > "$STAGING/loader/entries/live.conf"
 
     # 3. Assemble the UEFI FAT boot image (efiboot.img)
     BOOTLOADER="/usr/lib/systemd/boot/efi/systemd-bootx64.efi"
     EFIBOOT="$STAGING/EFI/boot/efiboot.img"
 
-    # Create an empty 90MB FAT image file (large enough to hold kernel + initrd + bootloader)
-    dd if=/dev/zero of="$EFIBOOT" bs=1M count=90
-    mkfs.vfat -F 32 -n "FSEFIBOOT" "$EFIBOOT"
+    # Create an empty 70MB FAT image file (large enough to hold kernel + pre-compressed initrd + bootloader)
+    dd if=/dev/zero of="$EFIBOOT" bs=1M count=70
+    mkfs.vfat -F 16 -n "FSEFIBOOT" "$EFIBOOT"
 
     # Populate the FAT image using mtools (requires zero loopback mounts)
     mmd -i "$EFIBOOT" ::/EFI
