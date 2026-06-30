@@ -1,7 +1,7 @@
 build:
     tar -xf $PKG_NAME-$PKG_VERSION.tar.xz
     tar -xf ell-*.tar.xz
-    ELL_DIR=$(find . -maxdepth 1 -type d -name "ell-*" -print -quit) && rm -rf $PKG_NAME-$PKG_VERSION/ell && mv "$ELL_DIR" $PKG_NAME-$PKG_VERSION/ell
+    ELL_DIR=$(find . -maxdepth 1 -type d -name "ell-*" -print -quit) && rm -rf $PKG_NAME-$PKG_VERSION/ell && mv "$ELL_DIR/ell" $PKG_NAME-$PKG_VERSION/ell
     cd $PKG_NAME-$PKG_VERSION && ./configure $CONFIGURE_ARGS && make -j$(nproc)
 
 package:
