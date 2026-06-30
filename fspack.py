@@ -227,7 +227,7 @@ def resolve_dependencies(target_groups):
     if len(ordered) != len(all_needed):
         raise Exception("Dependency cycle detected among packages")
 
-    return [name for name in ordered if name in target_pkgs]
+    return ordered
 
 def resolve_package_dependencies(pkg_name):
     """Returns a topologically sorted list of packages needed to build pkg_name (including pkg_name itself)."""
