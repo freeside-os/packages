@@ -1,0 +1,20 @@
+[package]
+name = "iwd"
+version = "3.12"
+description = "Internet Wireless Daemon"
+group = "system"
+dependencies = ["musl", "readline", "dbus-broker"]
+
+[[sources]]
+url = "https://www.kernel.org/pub/linux/network/wireless/iwd-3.12.tar.xz"
+checksum = { algorithm = "sha256", value = "d89a5e45c7180170e19be828f9e944a768c593758094fc57a358d0e7c4cb1a49" }
+
+[[sources]]
+url = "https://www.kernel.org/pub/linux/libs/ell/ell-0.83.tar.xz"
+checksum = { algorithm = "sha256", value = "39a562f5ab2768e69da1ffbb1f98a8eb3483baffc7d2ef6adc3705e4fd4e53fb" }
+
+[build]
+dependencies = ["musl", "readline", "ncurses", "pkgconf", "linux-headers"]
+
+[build.environment]
+CONFIGURE_ARGS = "--prefix=/usr --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --libexecdir=/usr/libexec --with-dbus-datadir=/usr/share --with-systemd-unitdir=/usr/lib/systemd/system --disable-manual-pages"
