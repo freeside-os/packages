@@ -5,7 +5,7 @@ build:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    STAGING="/tmp/iso_staging"
+    STAGING="/workspace/build/iso_staging"
     rm -rf "$STAGING"
     mkdir -p "$STAGING/EFI/boot" "$STAGING/EFI/BOOT" "$STAGING/loader/entries"
 
@@ -51,7 +51,7 @@ build:
 
     # 5. Assemble the SquashFS rootfs
     echo "=== Staging SquashFS root filesystem ==="
-    SQ_STAGING="/tmp/squashfs_staging"
+    SQ_STAGING="/workspace/build/squashfs_staging"
     rm -rf "$SQ_STAGING"
     mkdir -p "$SQ_STAGING"
 
@@ -67,7 +67,7 @@ build:
     # Resolve package build order for base, builder, and system groups
     RESOLVED_PACKAGES=$(python3 /workspace/packages/fspack.py resolve base builder system)
     for pkg in $RESOLVED_PACKAGES; do
-        TARBALL=$(ls /workspace/build/packages/${pkg}-*.tar.gz 2>/dev/null | head -n1)
+        TARBALL=$(find /workspace/build/packages/ -maxdepth 1 -name "${pkg}-*.tar.gz" | head -n1)
         if [ -n "$TARBALL" ]; then
             echo "Extracting $pkg to squashfs staging..."
             tar -xzf "$TARBALL" --keep-directory-symlink --exclude='./meta' --exclude='meta' -C "$SQ_STAGING"
@@ -90,7 +90,7 @@ build:
     # Copy package tarballs from base and system groups
     BASE_SYSTEM_PACKAGES=$(python3 /workspace/packages/fspack.py resolve base system)
     for pkg in $BASE_SYSTEM_PACKAGES; do
-        TARBALL=$(ls /workspace/build/packages/${pkg}-*.tar.gz 2>/dev/null | head -n1)
+        TARBALL=$(find /workspace/build/packages/ -maxdepth 1 -name "${pkg}-*.tar.gz" | head -n1)
         if [ -n "$TARBALL" ]; then
             cp "$TARBALL" "$CACHE_DIR/packages/"
         fi
