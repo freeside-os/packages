@@ -17,4 +17,4 @@ checksum = { algorithm = "sha256", value = "39a562f5ab2768e69da1ffbb1f98a8eb3483
 dependencies = ["musl", "readline", "ncurses", "pkgconf", "linux-headers"]
 
 [build.environment]
-CONFIGURE_ARGS = "--prefix=/usr --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --libexecdir=/usr/libexec --with-dbus-datadir=/usr/share --with-systemd-unitdir=/usr/lib/systemd/system --disable-manual-pages"
+CONFIGURE_ARGS = "--prefix=/usr --sbindir=/usr/bin --sysconfdir=/etc --localstatedir=/var --libexecdir=/usr/libexec --with-dbus-datadir=/usr/share --with-systemd-unitdir=/usr/lib/systemd/system --with-dbus-busdir=/usr/share/dbus-1/system-services --disable-manual-pages"
