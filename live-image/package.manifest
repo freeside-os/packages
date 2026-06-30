@@ -5,4 +5,4 @@ group = "live-image"
 description = "Freeside OS Live Bootable ISO Image"
 
 [build]
-dependencies = ["linux-kernel", "base-initramfs", "mtools", "xorriso"]
+dependencies = ["linux-kernel", "base-initramfs", "mtools", "xorriso", "squashfs-tools"]

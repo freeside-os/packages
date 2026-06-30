@@ -23,6 +23,34 @@ import stat
 from pathlib import Path
 
 # ---------------------------------------------------------
+# Systemd Mount Unit Constants for Live CD
+# ---------------------------------------------------------
+LIVE_MOUNT_CONTENT = """[Unit]
+Description=Mount Live Boot Medium
+DefaultDependencies=no
+After=udevadm-trigger-service.service
+
+[Mount]
+What=/dev/disk/by-label/FREESIDE_LIVE
+Where=/run/initramfs/live
+Type=iso9660
+Options=ro,nofail
+"""
+
+SYSROOT_MOUNT_CONTENT = """[Unit]
+Description=Mount Live Root Filesystem
+DefaultDependencies=no
+Requires=run-initramfs-live.mount
+After=run-initramfs-live.mount
+
+[Mount]
+What=/run/initramfs/live/rootfs.squashfs
+Where=/sysroot
+Type=squashfs
+Options=ro,loop
+"""
+
+# ---------------------------------------------------------
 # Toolchain Configurations & Manifest Constants
 # ---------------------------------------------------------
 
@@ -257,6 +285,25 @@ def inject_boot_symlinks(staging_dir):
         os.makedirs(svc_dir, exist_ok=True)
         with open(os.path.join(svc_dir, "override.conf"), "w") as f:
             f.write(OOM_OVERRIDE_CONTENT)
+
+    # Write systemd mount units for Live CD boot
+    systemd_system_dir = os.path.join(etc_dir, "systemd/system")
+    os.makedirs(systemd_system_dir, exist_ok=True)
+    
+    with open(os.path.join(systemd_system_dir, "run-initramfs-live.mount"), "w") as f:
+        f.write(LIVE_MOUNT_CONTENT)
+        
+    with open(os.path.join(systemd_system_dir, "sysroot.mount"), "w") as f:
+        f.write(SYSROOT_MOUNT_CONTENT)
+        
+    # Enable sysroot.mount in initrd.target.wants/
+    wants_dir = os.path.join(systemd_system_dir, "initrd.target.wants")
+    os.makedirs(wants_dir, exist_ok=True)
+    
+    symlink_path = os.path.join(wants_dir, "sysroot.mount")
+    if os.path.exists(symlink_path) or os.path.islink(symlink_path):
+        os.remove(symlink_path)
+    os.symlink("../sysroot.mount", symlink_path)
 
 
 def build_cpio_archive(staging_dir, output_path):

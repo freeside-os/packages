@@ -24,7 +24,7 @@ build:
         echo "title   Freeside OS Live Installer"
         echo "linux   /vmlinuz"
         echo "initrd  /initramfs.cpio.gz"
-        echo "options console=tty0 console=ttyS0 earlyprintk=serial,ttyS0,115200 debug"
+        echo "options console=tty0 console=ttyS0 earlyprintk=serial,ttyS0,115200 systemd.volatile=overlay debug"
     } > "$STAGING/loader/entries/live.conf"
 
     # 3. Assemble the UEFI FAT boot image (efiboot.img)
@@ -49,7 +49,58 @@ build:
     # 4. Copy bootloader directly to staging for standard UEFI directory loading
     cp "$BOOTLOADER" "$STAGING/EFI/BOOT/BOOTX64.EFI"
 
-    # 5. Compile the final ISO with UEFI boot parameters using xorriso
+    # 5. Assemble the SquashFS rootfs
+    echo "=== Staging SquashFS root filesystem ==="
+    SQ_STAGING="/tmp/squashfs_staging"
+    rm -rf "$SQ_STAGING"
+    mkdir -p "$SQ_STAGING"
+
+    # Set up UsrMerge symlinks in the squashfs root
+    mkdir -p "$SQ_STAGING/usr/bin" "$SQ_STAGING/usr/lib"
+    ln -sf usr/bin "$SQ_STAGING/bin"
+    ln -sf usr/bin "$SQ_STAGING/sbin"
+    ln -sf usr/lib "$SQ_STAGING/lib"
+    ln -sf usr/lib "$SQ_STAGING/lib64"
+    ln -sf lib "$SQ_STAGING/usr/lib64"
+    ln -sf bin "$SQ_STAGING/usr/sbin"
+
+    # Resolve package build order for base, builder, and system groups
+    RESOLVED_PACKAGES=$(python3 /workspace/packages/fspack.py resolve base builder system)
+    for pkg in $RESOLVED_PACKAGES; do
+        TARBALL=$(ls /workspace/build/packages/${pkg}-*.tar.gz 2>/dev/null | head -n1)
+        if [ -n "$TARBALL" ]; then
+            echo "Extracting $pkg to squashfs staging..."
+            tar -xzf "$TARBALL" --keep-directory-symlink --exclude='./meta' --exclude='meta' -C "$SQ_STAGING"
+        else
+            echo "WARNING: Tarball for $pkg not found!"
+        fi
+    done
+
+    # Create runtime folders
+    for dir in tmp proc sys dev run var etc root home boot; do
+        mkdir -p "$SQ_STAGING/$dir"
+    done
+    chmod 1777 "$SQ_STAGING/tmp"
+
+    # Copy sandbox-root.tgz
+    CACHE_DIR="$SQ_STAGING/var/cache/freeside"
+    mkdir -p "$CACHE_DIR/packages"
+    cp /workspace/build/sandbox-root.tgz "$CACHE_DIR/sandbox-root.tgz"
+
+    # Copy package tarballs from base and system groups
+    BASE_SYSTEM_PACKAGES=$(python3 /workspace/packages/fspack.py resolve base system)
+    for pkg in $BASE_SYSTEM_PACKAGES; do
+        TARBALL=$(ls /workspace/build/packages/${pkg}-*.tar.gz 2>/dev/null | head -n1)
+        if [ -n "$TARBALL" ]; then
+            cp "$TARBALL" "$CACHE_DIR/packages/"
+        fi
+    done
+
+    # Generate the rootfs.squashfs filesystem
+    mksquashfs "$SQ_STAGING" "$STAGING/rootfs.squashfs" -comp zstd
+    rm -rf "$SQ_STAGING"
+
+    # 6. Compile the final ISO with UEFI boot parameters using xorriso
     xorriso \
         -as mkisofs \
         -R -J -joliet-long \
