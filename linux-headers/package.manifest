@@ -3,7 +3,7 @@ name = "linux-headers"
 version = "7.1"
 description = "Linux kernel headers for userspace development"
 dependencies = []
-group = "builder"
+group = "base"
 
 [[sources]]
 url = "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.1.tar.xz"

@@ -3,7 +3,7 @@ name = "file"
 version = "5.45"
 description = "Fine Free File Command"
 dependencies = ["musl"]
-group = "builder"
+group = "base"
 
 [[sources]]
 url = "https://astron.com/pub/file/file-5.45.tar.gz"

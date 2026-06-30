@@ -3,7 +3,7 @@ name = "rsync"
 version = "3.3.0"
 description = "A fast, versatile, remote (and local) file-copying tool"
 dependencies = ["musl", "zlib"]
-group = "builder"
+group = "base"
 
 [[sources]]
 url = "https://download.samba.org/pub/rsync/src/rsync-3.3.0.tar.gz"

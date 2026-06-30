@@ -103,6 +103,7 @@ build:
     # 6. Compile the final ISO with UEFI boot parameters using xorriso
     xorriso \
         -as mkisofs \
+        -iso-level 3 \
         -R -J -joliet-long \
         -volid "FREESIDE_LIVE" \
         -eltorito-alt-boot \
