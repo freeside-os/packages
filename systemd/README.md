@@ -1,14 +1,19 @@
 # Systemd Package for Freeside Linux
 
-This directory contains the Freeside Linux packaging files for compiling `systemd` (version 255) using a pure LLVM/Musl toolchain.
+This directory contains the Freeside Linux packaging files for compiling `systemd` using a pure LLVM/Musl toolchain.
+
+## Package Metadata
+
+| Package Name | Version | Source URL | Checksum (SHA-256) |
+| --- | --- | --- | --- |
+| systemd | 261.1 | https://github.com/systemd/systemd/archive/refs/tags/v261.1.tar.gz | f9b9da1103d1714703503d1746971ccbeeae945663ef3ede3b7348169b5df064 |
 
 ## Musl Compatibility Patches
 
 Because `systemd` has historically been tightly coupled with GNU libc (glibc) extensions and behaviors, compiling it against Musl libc requires a series of targeted compatibility overrides. These overrides are maintained as patch files in this directory:
 
 ### [0004-add-fallback-parse_printf_format-implementation.patch](file:///home/dq/Code/freeside/packages/systemd/0004-add-fallback-parse_printf_format-implementation.patch)
-* **Description:** Injects a fallback implementation of `parse_printf_format()`.
-* **Reason:** Glibc's `<printf.h>` contains the `parse_printf_format()` API, which is missing from Musl libc.
+* **Description:** Injects a fallback implementation of `parse_printf_format()`.\n* **Reason:** Glibc's `<printf.h>` contains the `parse_printf_format()` API, which is missing from Musl libc.
 
 ### [0005-musl-compat.patch](file:///home/dq/Code/freeside/packages/systemd/0005-musl-compat.patch)
 This is a unified patch containing several critical compatibility workarounds across the codebase:
@@ -28,7 +33,7 @@ This is a unified patch containing several critical compatibility workarounds ac
 * **`linux/if_arp.h` wrapper (`src/basic/linux/if_arp.h`):** Intercepts `<linux/if_arp.h>` to pre-include `<netinet/if_ether.h>` and `<net/if_arp.h>` under Musl, and defines temporary macro renames for `arpreq`, `arpreq_old`, and `arphdr` during the kernel header parsing to prevent conflicts and redefinition errors.
 * **NSS group compatibility / gshadow fallback (`src/shared/user-record-nss.h` / `src/shared/user-record-nss.c`):** Guards `<gshadow.h>` and `getsgnam_r` with `#if ENABLE_GSHADOW` and defines a fallback stub structure `struct sgrp` to allow NSS user database code to compile successfully on Musl where `gshadow` is missing.
 * **utmp/wtmp stub fallbacks (`src/basic/macro.h`):** Defuses compilation errors in `wall.c` and `utmp-wtmp.c` under Musl by defining missing `_PATH_UTMPX` / `_PATH_WTMPX` macros (since Musl declares `utmpxname` and `updwtmpx` in `<utmpx.h>` but lacks the standard path macros).
-* **Linux UAPI/libc compatibility headers (`src/basic/linux/libc-compat.h`, `in.h`, `in6.h`):** Coordinates definitions between Musl's `<netinet/in.h>` / `<net/if.h>` and the kernel's `<linux/in6.h>` / `<linux/if.h>` by setting UAPI def guards to `0` when the corresponding libc headers are already included. Pre-includes userspace `<netinet/in.h>` inside the local `linux/in.h` and `linux/in6.h` wrappers to ensure the libc definitions take precedence and avoid redefinition or `struct __in6_union` mismatch errors on Musl.
+* **Linux UAPI/libc compatibility headers (`src/basic/linux/libc-compat.h`, `in.h`, `in6.h`):** Coordinates definitions between Musl's `<netinet/in.h>` / `<net/if.h>` and the kernel's `<linux/if.h>` by setting UAPI def guards to `0` when the corresponding libc headers are already included. Pre-includes userspace `<netinet/in.h>` inside the local `linux/in.h` and `linux/in6.h` wrappers to ensure the libc definitions take precedence and avoid redefinition or `struct __in6_union` mismatch errors on Musl.
 
 ## Iterative Patch Debugging (Incremental Builds)
 
@@ -50,10 +55,18 @@ The compilation of `systemd` v255 required several additions to the Meson build 
   - `-Dsbat-distro="freeside"`
   - `-Dsbat-distro-version="2024.06"`
   - `-Dsbat-distro-summary="Freeside OS"`
-  - `-Dsbat-distro-url="https://freeside.dev"`
+  - `-Dsbat-distro-url="https://github.com/freeside-os"`
 
 - **EFI Disabled:** The EFI boot stub code has a hard dependency on a 2-byte `wchar_t`, which conflicts with Musl's 4-byte `wchar_t` definition. To resolve this compilation error, the EFI feature was disabled entirely using the Meson flag:
   - `-Defi=false`
+
+**For systemd-261.1 on Musl, the following additional compilation issues were fixed directly in `package.justfile` instead of applying patches that drift:**
+- `libc-compat.h` / `if_ether.h` redefinition errors: Added sed commands to forcefully skip Musl's un-guarded duplicates.
+- Missing `ucontext.h` symbols: Musl dropped `getcontext`/`makecontext`/`swapcontext` and returns `ENOSYS`. We now inject `return -1` stub functions directly into `src/basic/log.c` which is linked in `libbasic.a` avoiding `-lucontext` missing symbol linker errors.
+- Missing `gshadow.h` and `gnu/libc-version.h`: Added dummy override headers.
+- Changed kernel `statx` structs: Systemd 261.1 requires newer statx struct fields (like `stx_mnt_id`) than Musl's `<sys/stat.h>` provides. Overrode `stx_mnt_id` access by pointing it at `stx_ino` via macro substitution, redefining missing `STATX_` constants, and patching `.c` files to not compare Mount ID natively.
+- EFI Freestanding Build `wchar_t` Conflicts: Re-enabled EFI compilation by specifically appending `#define __DEFINED_wchar_t` and `typedef unsigned short wchar_t;` into the EFI compilation's `efi-config.h` before system headers include `bits/alltypes.h` and redefine `wchar_t` as `int`.
+- Python Generator `ukify` Crash: Replaced `src/boot/generate-hwids-section.py` with a dummy mock `.c` emitter because it crashed missing `python-pefile` module.
 
 These flags have been added to the `package.justfile` and should be reviewed during future version upgrades.
 
@@ -77,8 +90,7 @@ cd /tmp/systemd-modified
 ```
 
 ### 3. Apply and Rebase the Patches
-Apply the existing patches manually or using `patch -p1`:
-```bash
+Apply the existing patches manually or using `patch -p1`:\n```bash
 patch -p1 < /home/dq/Code/freeside/packages/systemd/0004-add-fallback-parse_printf_format-implementation.patch
 patch -p1 < /home/dq/Code/freeside/packages/systemd/0005-musl-compat.patch
 ```

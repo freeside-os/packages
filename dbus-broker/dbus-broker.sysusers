@@ -1,0 +1,2 @@
+# System user for D-Bus message broker
+u dbus - "D-Bus Message Bus" /run/dbus

@@ -1,0 +1,13 @@
+[package]
+name = "procps-ng"
+version = "4.0.6"
+description = "Utilities for monitoring your system and its processes"
+dependencies = ["musl", "ncurses", "systemd"]
+group = "system"
+
+[[sources]]
+url = "https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-4.0.6.tar.xz"
+checksum = { algorithm = "sha256", value = "67bea6fbc3a42a535a0230c9e891e5ddfb4d9d39422d46565a2990d1ace15216" }
+
+[build]
+dependencies = ["musl", "ncurses", "systemd", "pkgconf", "gettext", "make"]

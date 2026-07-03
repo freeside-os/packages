@@ -1,8 +1,0 @@
-[package]
-name = "live-image"
-version = "1.0.0"
-group = "live-image"
-description = "Freeside OS Live Bootable ISO Image"
-
-[build]
-dependencies = ["linux-kernel", "base-initramfs", "mtools", "xorriso", "squashfs-tools"]

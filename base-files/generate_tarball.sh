@@ -51,6 +51,21 @@ cat > "${ETC_DIR}/hosts" << 'EOF'
 ::1         localhost
 EOF
 
+# 6. usr/share/freeside/etc/nsswitch.conf
+cat > "${ETC_DIR}/nsswitch.conf" << 'EOF'
+passwd:     files
+group:      files
+shadow:     files
+
+hosts:      files dns
+networks:   files
+
+protocols:  files
+services:   files
+ethers:     files
+rpc:        files
+EOF
+
 echo "=== [base-files] Generating Tarball ==="
 tar -C "${TEMP_DIR}" -czf base-files-1.0.0.tar.gz usr
 

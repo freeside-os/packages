@@ -2,12 +2,24 @@
 name = "dbus-broker"
 version = "37"
 description = "Linux D-Bus Message Broker - high-performance drop-in replacement"
-dependencies = ["musl", "systemd"]
+dependencies = ["musl", "systemd", "libexpat"]
 group = "system"
 
 [[sources]]
 url = "https://github.com/bus1/dbus-broker/releases/download/v37/dbus-broker-37.tar.xz"
 checksum = { algorithm = "sha256", value = "f819a8db8795fa08c767612e3823fd594694a0990f2543ecf35d6a1a6bf2ab5b" }
+
+[[sources]]
+file = "system.conf"
+checksum = { algorithm = "sha256", value = "df020f7bd176f690c6c63464bb47f3daa44ca9fd6dbc253514c289c7b60ee205" }
+
+[[sources]]
+file = "session.conf"
+checksum = { algorithm = "sha256", value = "ab73707b621f50c19a1d9e25ee29a789292a9cc1d55ecfb73c5f7947a9438ed2" }
+
+[[sources]]
+file = "dbus-broker.sysusers"
+checksum = { algorithm = "sha256", value = "07e195d44bb37e3d08e3efc80aa012e47da9d06f494122c444cfa926c2742f8f" }
 
 [build]
 dependencies = [
@@ -15,5 +27,6 @@ dependencies = [
     "meson",
     "ninja",
     "pkgconf",
-    "systemd"
+    "systemd",
+    "libexpat"
 ]

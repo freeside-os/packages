@@ -4,6 +4,9 @@ build:
 
 package:
     cd $PKG_NAME-$PKG_VERSION && make DESTDIR="$DESTDIR" install
+    # Use relative path; absolute paths fail to resolve during switch_root namespace transition
+    rm -f "$DESTDIR/usr/lib/ld-musl-x86_64.so.1"
+    ln -sf libc.so "$DESTDIR/usr/lib/ld-musl-x86_64.so.1"
     # Enforce strict permissions compliance
     find "$DESTDIR" -type d -exec chmod 755 {} +
     find "$DESTDIR/usr/lib" -name "*.so*" -exec chmod 755 {} + || true

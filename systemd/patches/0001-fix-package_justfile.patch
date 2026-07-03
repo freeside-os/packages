@@ -1,0 +1,14 @@
+--- a/package.justfile
++++ b/package.justfile
+@@ -10,6 +10,12 @@
+     sed -i 's/#if HAVE_PRINTF_H/#if defined(HAVE_PRINTF_H) \&\& HAVE_PRINTF_H/' src/basic/parse-printf-format.h || true
+     
+     sed -i 's/#include <printf.h>/#include "parse-printf-format.h"/' src/basic/stdio-util.h || true
+     sed -i 's/#include <printf.h>/#include "parse-printf-format.h"/' src/libsystemd/sd-journal/journal-send.c || true
+     sed -i "s/error('Unknown filesystems defined/message('WARNING: Unknown filesystems defined/" src/basic/meson.build || true
++
++    # Fix musl redefinition errors by forcing __UAPI_DEF_ETHHDR to 0 and similar in uapi
++    find src -name "libc-compat.h" -exec sed -i 's/#define __UAPI_DEF_ETHHDR\s\+1/#define __UAPI_DEF_ETHHDR 0/g' {} + || true
++    find src -name "libc-compat.h" -exec sed -i 's/#define __UAPI_DEF_IP6_MTUINFO\s\+1/#define __UAPI_DEF_IP6_MTUINFO 0/g' {} + || true
++    # In some kernel headers ethhdr is defined without __UAPI_DEF_ETHHDR guards. Let's comment out the struct if needed.
++    find src -name "if_ether.h" -exec sed -i 's/struct ethhdr {/struct ethhdr_disabled {/g' {} + || true

@@ -7,7 +7,7 @@ group = "base"
 
 [[sources]]
 file = "base-files-1.1.0.tar.gz"
-checksum = { algorithm = "sha256", value = "c20c6b3d033d91e222cf322ece5afd617f2f4fdc8322dac51dffcd4e49309676" }
+checksum = { algorithm = "sha256", value = "deeddd5b70fb3df312799e49abc7811ab3f242f82f2bcaffd5e50a5849f48ece" }
 
 [[sources]]
 file = "base-files.conf"

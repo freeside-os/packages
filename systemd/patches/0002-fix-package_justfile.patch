@@ -1,0 +1,11 @@
+--- a/package.justfile
++++ b/package.justfile
+@@ -107,7 +107,7 @@
+     #define STATX_DIOALIGN 0x00002000U
+     #endif
+     #ifndef STATX_DIO_READ_ALIGN
+-    #define STATX_DIO_READ_ALIGN 0x00002000U
++    #define STATX_DIO_READ_ALIGN 0x00020000U
+     #endif
+     #ifndef STATX_SUBVOL
+     #define STATX_SUBVOL 0x00008000U

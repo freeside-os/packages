@@ -1,0 +1,10 @@
+[package]
+name = "glib2"
+version = "2.88.2"
+description = "Low level core library"
+group = "system"
+dependencies = ["bash", "musl", "libffi", "util-linux", "zlib", "python3", "elfutils", "gettext", "pkgconf", "ca-certificates"]
+
+[[sources]]
+url = "https://download.gnome.org/sources/glib/2.88/glib-2.88.2.tar.xz"
+checksum = { algorithm = "sha256", value = "cf3f215a640c8a4257f14317586b8f1fdd25a10a93cb4bdda147c0f9ad88e74f" }

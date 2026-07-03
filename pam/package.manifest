@@ -1,0 +1,13 @@
+[package]
+name = "pam"
+version = "1.7.2"
+description = "PAM (Pluggable Authentication Modules) library"
+dependencies = ["musl", "pambase", "systemd", "libcap"]
+group = "system"
+
+[[sources]]
+url = "https://github.com/linux-pam/linux-pam/releases/download/v1.7.2/Linux-PAM-1.7.2.tar.xz"
+checksum = { algorithm = "sha256", value = "3d86b6383fb5fd9eb9578d2cd47d92801191f4bf3f9bc61419bfefc8aa1e531a" }
+
+[build]
+dependencies = ["flex", "bison", "pkgconf", "libcap", "systemd", "gettext"]

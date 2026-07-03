@@ -424,34 +424,3 @@ diff -Naur a/src/test/test-utmp.c b/src/test/test-utmp.c
  #ifndef UT_NAMESIZE
  #  define UT_NAMESIZE      32
  #endif
-diff -Naur a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
---- a/src/tmpfiles/tmpfiles.c	2023-12-06 15:32:40.000000000 -0500
-+++ b/src/tmpfiles/tmpfiles.c	2026-06-21 15:44:18.550031992 -0400
-@@ -2433,9 +2433,10 @@
- }
- 
- static int glob_item(Context *c, Item *i, action_t action) {
--        _cleanup_globfree_ glob_t g = {
--                .gl_opendir = (void *(*)(const char *)) opendir_nomod,
--        };
-+        _cleanup_globfree_ glob_t g = {};
-+#if GLOB_ALTDIRFUNC
-+        g.gl_opendir = (void *(*)(const char *)) opendir_nomod;
-+#endif
-         int r = 0, k;
- 
-         assert(c);
-@@ -2460,9 +2461,10 @@
-                 Item *i,
-                 fdaction_t action) {
- 
--        _cleanup_globfree_ glob_t g = {
--                .gl_opendir = (void *(*)(const char *)) opendir_nomod,
--        };
-+        _cleanup_globfree_ glob_t g = {};
-+#if GLOB_ALTDIRFUNC
-+        g.gl_opendir = (void *(*)(const char *)) opendir_nomod;
-+#endif
-         int r = 0, k;
- 
-         k = safe_glob(i->path, GLOB_NOSORT|GLOB_BRACE, &g);
