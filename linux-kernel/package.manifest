@@ -1,6 +1,6 @@
 [package]
 name = "linux-kernel"
-version = "7.1.0"
+version = "7.1.3"
 description = "Raw Mainline Linux Kernel image (vmlinuz)"
 group = "linux"
 dependencies = [

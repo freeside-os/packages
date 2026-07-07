@@ -1,0 +1,13 @@
+[package]
+name = "fstools"
+version = "1.0.0"
+description = "Freeside Developer and Builder Tools"
+dependencies = ["python3"]
+group = "builder"
+
+[[sources]]
+file = "fstools"
+checksum = { algorithm = "sha256", value = "7110944b59c5e112f73d07411307c87195c5dcf4cf695bffbff0ca569241c101" }
+
+[build]
+dependencies = ["python3"]

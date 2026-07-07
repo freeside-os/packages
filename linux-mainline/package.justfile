@@ -1,7 +1,7 @@
 # linux-mainline compile and UKI stitching recipe
-pkg_name := env_var_or_default("PKG_NAME", "linux-mainline")
-pkg_version := env_var_or_default("PKG_VERSION", "7.1.0")
-destdir := env_var_or_default("DESTDIR", "pkg-dest")
+pkg_name := env_var_or_default("PKG_NAME", "UNDEFINED")
+pkg_version := env_var_or_default("PKG_VERSION", "UNDEFINED")
+destdir := env_var_or_default("DESTDIR", "UNDEFINED")
 linuxdir := destdir + "/usr/lib/freeside/linux/mainline"
 
 cc := "clang"
@@ -10,7 +10,7 @@ llvm_flags := "CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1"
 
 prepare:
     # Tarball is likely downloaded to the current directory (src).
-    tar -xf linux-7.1.tar.xz --strip-components=1
+    tar -xf linux-{{pkg_version}}.tar.xz --strip-components=1
     sed -i 's|#include <linux/types.h>|#include <linux/types.h>\n#ifndef __attribute_const__\n#define __attribute_const__ __attribute__((__const__))\n#endif|' include/uapi/linux/swab.h
     
     # Inject our minimal, musl-friendly, vendor-neutral hardware configuration

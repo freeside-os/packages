@@ -1,6 +1,6 @@
-pkg_name := env_var_or_default("PKG_NAME", "linux-kernel")
-pkg_version := env_var_or_default("PKG_VERSION", "7.1.0")
-destdir := env_var_or_default("DESTDIR", "pkg-dest")
+pkg_name := env_var_or_default("PKG_NAME", "UNDEFINED")
+pkg_version := env_var_or_default("PKG_VERSION", "UNDEFINED")
+destdir := env_var_or_default("DESTDIR", "UNDEFINED")
 
 build:
     # Nothing to compile, it's already compiled by linux-mainline.

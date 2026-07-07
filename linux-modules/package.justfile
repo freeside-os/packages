@@ -1,6 +1,6 @@
-pkg_name := env_var_or_default("PKG_NAME", "linux-modules")
-pkg_version := env_var_or_default("PKG_VERSION", "7.1.0")
-destdir := env_var_or_default("DESTDIR", "pkg-dest")
+pkg_name := env_var_or_default("PKG_NAME", "UNDEFINED")
+pkg_version := env_var_or_default("PKG_VERSION", "UNDEFINED")
+destdir := env_var_or_default("DESTDIR", "UNDEFINED")
 
 llvm_flags := "CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1"
 
