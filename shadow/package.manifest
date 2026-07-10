@@ -1,0 +1,14 @@
+[package]
+name = "shadow"
+version = "0.2.0"
+description = "Memory-safe Rust reimplementation of Linux shadow-utils"
+dependencies = ["musl"]
+group = "system"
+
+[[sources]]
+url = "https://github.com/uutils/shadow/archive/refs/tags/v0.2.0.tar.gz"
+file = "shadow-0.2.0.tar.gz"
+checksum = { algorithm = "sha256", value = "60fa79149b57775e5ff342e43ffd36048cbe093cf19ba2f2e4364e2a9596fa21" }
+
+[build]
+dependencies = ["musl", "rust", "make"]
