@@ -2,7 +2,7 @@
 name = "systemd"
 version = "261.1"
 description = "System and Service Manager"
-dependencies = ["musl", "util-linux", "libcap", "musl-utils"]
+dependencies = ["musl", "util-linux", "libcap", "musl-utils", "cryptsetup"]
 group = "system"
 
 [[sources]]
@@ -25,6 +25,7 @@ dependencies = [
     "util-linux",
     "libcap",
     "musl-utils",
+    "cryptsetup",
     "meson",
     "ninja",
     "pkgconf",

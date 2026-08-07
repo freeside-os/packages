@@ -12,12 +12,20 @@ build:
 		-DCLANG_DEFAULT_RTLIB="compiler-rt" \
 		-DCLANG_DEFAULT_CXX_STDLIB="libc++" \
 		-DLIBCXX_HAS_MUSL_LIBC=ON \
+		-DLIBCXX_USE_COMPILER_RT=ON \
+		-DLIBCXXABI_USE_COMPILER_RT=ON \
+		-DLIBUNWIND_USE_COMPILER_RT=ON \
+		-DLIBCXX_HAS_ATOMIC_LIB=OFF \
+		-DHAVE_CXX_ATOMICS_WITHOUT_LIB=TRUE \
+		-DHAVE_CXX_ATOMICS64_WITHOUT_LIB=TRUE \
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF \
 		-DCOMPILER_RT_BUILD_GWP_ASAN=OFF \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
 		-DCOMPILER_RT_BUILD_ORC=OFF \
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
 		-DCOMPILER_RT_BUILD_MEMPROF=OFF \
+		-DCOMPILER_RT_BUILD_LIBATOMIC=ON \
+		-DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF \
 		../llvm && make -j$(nproc)
 
 package:
@@ -48,6 +56,11 @@ package:
 				ln -sf "x86_64-freeside-linux-musl/$(basename "$lib")" "$DESTDIR/usr/lib/$(basename "$lib")"
 			fi
 		done
+	fi
+	# libgcc_s.so.1 compatibility symlink — binaries linked with -lgcc_s find libunwind instead.
+	# libunwind provides the same unwinding functionality for an all-LLVM toolchain.
+	if [ -f "$DESTDIR/usr/lib/libunwind.so.1" ] || [ -L "$DESTDIR/usr/lib/libunwind.so.1" ]; then
+		ln -sf libunwind.so.1 "$DESTDIR/usr/lib/libgcc_s.so.1"
 	fi
 	find "$DESTDIR" -type d -exec chmod 755 {} +
 	if [ -d "$DESTDIR/usr/bin" ]; then find "$DESTDIR/usr/bin" -type f -exec chmod 755 {} +; fi

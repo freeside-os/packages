@@ -4,7 +4,10 @@ pkg_version := env_var_or_default("PKG_VERSION", "1.0.0")
 destdir := env_var_or_default("DESTDIR", "pkg-dest")
 
 build:
-    fstools initrd build --packages-dir /workspace/packages_output --output initramfs.cpio
+    PEX_ROOT="/tmp/pex_build" fstools initrd build --packages-dir /workspace/packages_output --output initramfs.cpio
+
+
+
 
 package:
     mkdir -p "{{destdir}}"/usr/lib/freeside

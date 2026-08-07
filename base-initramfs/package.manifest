@@ -10,6 +10,7 @@ dependencies = [
 [build]
 dependencies = [
     "llvm", "make", "libarchive", "gzip", "findutils",
-    "musl", "systemd", "cryptsetup", "btrfs-progs", "util-linux", "kmod", "bash"
+    "musl", "systemd", "cryptsetup", "btrfs-progs", "util-linux", "kmod", "bash", "fstools"
 ]
+
 

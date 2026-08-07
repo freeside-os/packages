@@ -2,7 +2,7 @@
 name = "linux-uki"
 version = "7.1.3"
 description = "Unified Kernel Image (UKI) PE executable for Freeside boot"
-group = "linux"
+group = "system"
 dependencies = [
 ]
 
@@ -17,4 +17,4 @@ dependencies = [
 
 [[sources]]
 file = "cmdline"
-checksum = { algorithm = "sha256", value = "860f28b944c0fc004d986fdf6b4f569e397acee87b4b59525ab4623519c58c48" }
+checksum = { algorithm = "sha256", value = "315503c8244ac3e764363202d049630181f96f6451c101ff92b0879d8065c6c5" }

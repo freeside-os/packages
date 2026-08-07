@@ -1,1 +1,1 @@
-root=UUID=placeholder rw console=ttyS0 systemd.volatile=overlay
+rw console=tty0 console=ttyS0,115200n8 earlyprintk=serial,ttyS0,115200 root=gpt-auto

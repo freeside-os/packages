@@ -119,6 +119,7 @@ build: prepare
         -Dsbat-distro-url="https://github.com/freeside-os" \
         -Doomd=false \
         -Defi=true \
+        -Dlibcryptsetup=enabled \
         -Db_lto=false
     
     cat << 'EOF' >> build/config.h

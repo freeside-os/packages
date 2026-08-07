@@ -7,11 +7,11 @@ group = "base"
 
 [[sources]]
 file = "base-files-1.1.0.tar.gz"
-checksum = { algorithm = "sha256", value = "deeddd5b70fb3df312799e49abc7811ab3f242f82f2bcaffd5e50a5849f48ece" }
+checksum = { algorithm = "sha256", value = "fa10e2a168c1c3b75ebad8b737dd87b5c785b907b3ece557a5d34bd0eab1255f" }
 
 [[sources]]
 file = "base-files.conf"
-checksum = { algorithm = "sha256", value = "11cc53bcebcfaaaf57acc69690ae2b465922f68abb3efa04b6e051a1dfb5fe54" }
+checksum = { algorithm = "sha256", value = "00b55e9acda5879021406ac5b9d86830f18e0521993f54431f658c37a90c15c7" }
 
 [[sources]]
 file = "etc.mount"

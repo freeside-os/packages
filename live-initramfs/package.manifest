@@ -1,0 +1,12 @@
+[package]
+name = "live-initramfs"
+version = "1.0.0"
+description = "Micro initramfs overlay for Freeside Live ISO boot media"
+group = "live-image"
+
+[[sources]]
+file = "generate_cpio.py"
+checksum = { algorithm = "sha256", value = "37b28c3e88a616cba9bd35d598cd9c8d8051efab70fc0e0168096d75f266fafd" }
+
+[build]
+dependencies = ["python3", "gzip"]
