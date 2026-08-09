@@ -7,7 +7,7 @@ group = "system"
 
 [[sources]]
 file = "fstools"
-checksum = { algorithm = "sha256", value = "4b18167516c3cc531696eb10842d35bf9c3f393313c7f6a3e7e5e9464aa3074e" }
+checksum = { algorithm = "sha256", value = "04abdc788a6142ab70a340f139686bee79cf4953ca21548e451cd273b4e8ba5e" }
 
 [build]
 dependencies = ["python3"]

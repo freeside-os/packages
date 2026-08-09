@@ -3,7 +3,7 @@ name = "cryptsetup"
 version = "2.8.6"
 group = "system"
 description = "Userspace setup tool for transparent encryption of block devices using dm-crypt"
-dependencies = ["musl", "openssl", "util-linux", "json-c"]
+dependencies = ["musl", "openssl", "util-linux", "json-c", "lvm2"]
 
 [[sources]]
 url = "https://www.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-2.8.6.tar.xz"
